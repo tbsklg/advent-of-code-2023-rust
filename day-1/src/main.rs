@@ -11,7 +11,10 @@ fn main() {
     println!("Calibration value is: {}", calibration_value_one);
 
     println!("Trying to calculate the calibration value for provided input (part 2)...");
+    let before = std::time::Instant::now();
     let calibration_value_two =
         day_1::calculate_calibration_value_with_letters(input.lines().collect());
+    let after = std::time::Instant::now();
+    println!("Time taken: {:?}", after.duration_since(before));
     println!("Calibration value is: {}", calibration_value_two);
 }
