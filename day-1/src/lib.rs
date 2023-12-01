@@ -1,11 +1,17 @@
-pub fn calculate_calibration_value(input: Vec<&str>) -> u32 {
-    extract_numbers(input).iter().map(|x| *x as u32).sum()
+ #![warn(
+     clippy::pedantic,
+ )]
+
+#[must_use]
+pub fn calculate_calibration_value(input: Vec<&str>) -> i32 {
+    extract_numbers(input).iter().map(|x| i32::from(*x)).sum()
 }
 
-pub fn calculate_calibration_value_with_letters(input: Vec<&str>) -> u32 {
+#[must_use]
+pub fn calculate_calibration_value_with_letters(input: Vec<&str>) -> i32 {
     extract_numbers_with_letters(input)
         .iter()
-        .map(|x| *x as u32)
+        .map(|x| i32::from(*x))
         .sum()
 }
 
@@ -32,12 +38,9 @@ fn extract_number_with_letters(str: &str) -> i8 {
 }
 
 fn find_digits(str: &str) -> Option<String> {
-    let digits = str.chars().filter(|x| x.is_digit(10)).collect();
+    let digits = str.chars().filter(char::is_ascii_digit).collect::<String>();
 
-    match digits == "" {
-        true => None,
-        false => Some(digits),
-    }
+    if digits.is_empty() { None } else { Some(digits) }
 }
 
 const LETTERS_TO_DIGITS: [(&str, i8); 9] = [
@@ -54,7 +57,7 @@ const LETTERS_TO_DIGITS: [(&str, i8); 9] = [
 
 fn replace_letter_with_digit(input: &str) -> String {
     if input.is_empty() {
-        String::from("")
+        String::new()
     } else {
         LETTERS_TO_DIGITS
             .iter()
@@ -68,13 +71,13 @@ fn replace_letter_with_digit(input: &str) -> String {
 }
 
 fn get_first_and_last(str: &str) -> Option<String> {
-    let mut chars = str.chars().into_iter();
+    let mut chars = str.chars();
     let head = chars.next();
     let last = chars.last();
 
     match (head, last) {
-        (Some(h), Some(l)) => Some(format!("{}{}", h, l)),
-        (Some(h), None) => Some(format!("{}{}", h, h)),
+        (Some(h), Some(l)) => Some(format!("{h}{l}")),
+        (Some(h), None) => Some(format!("{h}{h}")),
         _ => None,
     }
 }
