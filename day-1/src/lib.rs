@@ -1,7 +1,3 @@
- #![warn(
-     clippy::pedantic,
- )]
-
 #[must_use]
 pub fn calculate_calibration_value(input: Vec<&str>) -> i32 {
     extract_numbers(input).iter().map(|x| i32::from(*x)).sum()
