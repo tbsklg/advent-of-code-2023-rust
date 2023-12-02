@@ -3,10 +3,8 @@ use std::{collections::HashMap, fs};
 use day_2::Color;
 
 fn main() {
-    println!("Hello to the Advent of Code 2023 Day 2 Challenge!");
-
-    let input = fs::read_to_string("../resources/day-2.txt")
-        .expect("Should have been able to read the file day-2.txt");
+    let path = std::path::Path::new("day-2/src/input.txt");
+    let input = fs::read_to_string(path).expect("Should have been able to read the file input.txt");
 
     println!("Trying to solve part 1...");
     let sum_of_ids = day_2::calculate_sum_of_game_ids(

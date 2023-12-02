@@ -1,10 +1,8 @@
 use std::fs;
 
 fn main() {
-    println!("Hello to the Advent of Code 2023 Day 1 Challenge!");
-
-    let input = fs::read_to_string("../resources/day-1.txt")
-        .expect("Should have been able to read the file day-1.txt");
+    let path = std::path::Path::new("day-1/src/input.txt");
+    let input = fs::read_to_string(path).expect("Should have been able to read the file day-1.txt");
 
     println!("Trying to solve part 1...");
     let calibration_value_one = day_1::calculate_calibration_value(input.lines().collect());
