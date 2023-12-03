@@ -1,3 +1,5 @@
+#![warn(clippy::pedantic)]
+
 #[must_use]
 pub fn calculate_calibration_value(input: Vec<&str>) -> i32 {
     extract_numbers(input).iter().map(|x| i32::from(*x)).sum()
@@ -36,7 +38,11 @@ fn extract_number_with_letters(str: &str) -> i8 {
 fn find_digits(str: &str) -> Option<String> {
     let digits = str.chars().filter(char::is_ascii_digit).collect::<String>();
 
-    if digits.is_empty() { None } else { Some(digits) }
+    if digits.is_empty() {
+        None
+    } else {
+        Some(digits)
+    }
 }
 
 const LETTERS_TO_DIGITS: [(&str, i8); 9] = [
