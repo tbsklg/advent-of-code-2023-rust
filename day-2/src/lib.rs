@@ -93,7 +93,7 @@ fn create_game(input: &str) -> Option<Game> {
 
     let id = split.next().and_then(extract_id);
 
-    let cube_sets = split.next().map(|cube_sets| create_cube_sets(cube_sets));
+    let cube_sets = split.next().map(create_cube_sets);
 
     match (id, cube_sets) {
         (Some(id), Some(cube_sets)) => Some(Game::from(id, cube_sets)),
