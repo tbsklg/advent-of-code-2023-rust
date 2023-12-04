@@ -1,11 +1,14 @@
 #![warn(clippy::pedantic)]
 
+use std::collections::HashMap;
+
 use lazy_static::lazy_static;
 use regex::Regex;
 
 struct Schematic {
     numbers: Vec<Number>,
     symbols: Vec<Symbol>,
+    gears: Vec<Symbol>,
 }
 
 impl Schematic {
@@ -22,17 +25,27 @@ impl Schematic {
             .flat_map(|(i, l)| extract_symbols_from_line(i, l))
             .collect();
 
-        Self { numbers, symbols }
+        let gears = lines
+            .iter()
+            .enumerate()
+            .flat_map(|(i, l)| extract_gears_from_line(i, l))
+            .collect();
+
+        Self {
+            numbers,
+            symbols,
+            gears,
+        }
     }
 }
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
 struct Symbol {
     row_index: usize,
     col_index: usize,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 struct Number {
     row_index: usize,
     col_from_index: usize,
@@ -43,6 +56,7 @@ struct Number {
 lazy_static! {
     static ref NUMBER_REGEX: Regex = Regex::new(r"\d+").unwrap();
     static ref SYMBOL_REGEX: Regex = Regex::new(r"[=#$+*%&@/-]").unwrap();
+    static ref GEAR_REGEX: Regex = Regex::new(r"[*]").unwrap();
 }
 
 #[must_use]
@@ -51,6 +65,40 @@ pub fn sum_up_possible_numbers(lines: Vec<&str>) -> u32 {
     let possible_numbers = possible_numbers(schematic.numbers, schematic.symbols);
 
     possible_numbers.iter().map(|n| n.value).sum()
+}
+
+#[must_use]
+pub fn sum_of_all_gear_ratios(lines: Vec<&str>) -> u32 {
+    let schematic = Schematic::from_lines(lines);
+    let gear_to_numbers = gear_to_numbers(schematic);
+
+    gear_to_numbers
+        .values()
+        .filter(|v| v.len() == 2)
+        .map(|v| v.iter().map(|x| x.value).product::<u32>())
+        .sum()
+}
+
+fn gear_to_numbers(schematic: Schematic) -> HashMap<Symbol, Vec<Number>> {
+    schematic
+        .gears
+        .into_iter()
+        .fold(HashMap::new(), |mut acc, gear| {
+            let numbers = find_numbers_for_gear(gear, schematic.numbers.clone());
+            acc.insert(gear, numbers);
+            acc
+        })
+}
+
+fn find_numbers_for_gear(gear: Symbol, numbers: Vec<Number>) -> Vec<Number> {
+    numbers
+        .into_iter()
+        .filter(|n| is_number_in_gear(n, gear))
+        .collect()
+}
+
+fn is_number_in_gear(n: &Number, gear: Symbol) -> bool {
+    next_row(n, gear) || current_row(n, gear) || former_row(n, gear)
 }
 
 fn possible_numbers(numbers: Vec<Number>, symbols: Vec<Symbol>) -> Vec<Number> {
@@ -86,6 +134,16 @@ fn former_row(n: &Number, s: Symbol) -> bool {
 
 fn extract_symbols_from_line(line_number: usize, input: &str) -> Vec<Symbol> {
     SYMBOL_REGEX
+        .find_iter(input)
+        .map(|m| Symbol {
+            row_index: line_number,
+            col_index: m.start(),
+        })
+        .collect()
+}
+
+fn extract_gears_from_line(line_number: usize, input: &str) -> Vec<Symbol> {
+    GEAR_REGEX
         .find_iter(input)
         .map(|m| Symbol {
             row_index: line_number,
@@ -220,4 +278,37 @@ fn should_create_schematic_from_lines() {
 
     assert_eq!(schematic.numbers.len(), 4);
     assert_eq!(schematic.symbols.len(), 2);
+    assert_eq!(schematic.gears.len(), 1);
+}
+
+#[test]
+fn should_find_numbers_per_gear() {
+    let lines = vec!["467..114..", "...*......", "..35..633.", "......#..."];
+    let schematic = Schematic::from_lines(lines);
+
+    let gear_to_numbers = gear_to_numbers(schematic);
+
+    assert_eq!(
+        gear_to_numbers,
+        HashMap::from([(
+            Symbol {
+                row_index: 1,
+                col_index: 3,
+            },
+            vec![
+                Number {
+                    row_index: 0,
+                    col_from_index: 0,
+                    col_to_index: 2,
+                    value: 467,
+                },
+                Number {
+                    row_index: 2,
+                    col_from_index: 2,
+                    col_to_index: 3,
+                    value: 35,
+                },
+            ],
+        )])
+    );
 }

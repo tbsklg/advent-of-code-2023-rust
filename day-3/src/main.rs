@@ -8,4 +8,12 @@ fn main() {
     let sum_of_numbers = day_3::sum_up_possible_numbers(input.lines().collect());
 
     println!("Solution is: {}", sum_of_numbers);
+
+    println!("Trying to solve part 2...");
+    let before = std::time::Instant::now();
+    let sum_of_gear_ratios = day_3::sum_of_all_gear_ratios(input.lines().collect());
+
+    let after = std::time::Instant::now();
+    println!("Time taken: {:?}", after.duration_since(before));
+    println!("Solution is: {}", sum_of_gear_ratios);
 }
