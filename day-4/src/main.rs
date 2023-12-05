@@ -8,4 +8,12 @@ fn main() {
     let points = day_4::calculate_points(input.lines().collect());
 
     println!("Solution is: {}", points);
+
+    println!("Trying to solve part 2...");
+    let before = std::time::Instant::now();
+    let cards = day_4::calculate_scratchcards(input.lines().collect());
+
+    let after = std::time::Instant::now();
+    println!("Time taken: {:?}", after.duration_since(before));
+    println!("Solution is: {}", cards);
 }
