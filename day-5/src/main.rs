@@ -17,8 +17,20 @@ fn main() {
         Category::HUMIDITY,
         Category::LOCATION,
     ];
+
     let location_number =
-        day_5::calculate_lowest_location_number(input.lines().collect(), strategy);
+        day_5::calculate_lowest_location_number(input.lines().collect(), strategy.clone());
 
     println!("Solution is: {}", location_number);
+
+    println!("Trying to solve part 2...");
+    let before = std::time::Instant::now();
+    let location_number_ranges = day_5::calculate_lowest_location_number_with_ranges(
+        input.lines().collect(),
+        strategy.clone(),
+    );
+
+    let after = std::time::Instant::now();
+    println!("Time taken: {:?}", after.duration_since(before));
+    println!("Solution is: {}", location_number_ranges);
 }

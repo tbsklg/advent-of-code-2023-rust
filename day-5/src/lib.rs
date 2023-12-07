@@ -31,6 +31,26 @@ pub fn calculate_lowest_location_number(input: Vec<&str>, strategy: Vec<Category
         .unwrap()
 }
 
+pub fn calculate_lowest_location_number_with_ranges(
+    input: Vec<&str>,
+    strategy: Vec<Category>,
+) -> u64 {
+    let (seeds, maps) = parse_input(input);
+
+    let first_from = seeds.get(0).unwrap().clone();
+    let first_to = first_from + seeds.get(1).unwrap();
+
+    let snd_from = seeds.get(2).unwrap().clone();
+    let snd_to = snd_from + seeds.get(3).unwrap();
+
+    (first_from..first_to)
+        .chain(snd_from..snd_to)
+        .into_iter()
+        .map(|s| calculate_conversions(s, maps.clone(), strategy.clone()))
+        .min()
+        .unwrap()
+}
+
 fn calculate_conversions(
     source: u64,
     map: HashMap<Category, Vec<Conversion>>,
