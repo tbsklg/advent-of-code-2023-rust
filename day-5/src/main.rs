@@ -25,10 +25,8 @@ fn main() {
 
     println!("Trying to solve part 2...");
     let before = std::time::Instant::now();
-    let location_number_ranges = day_5::calculate_lowest_location_number_with_ranges(
-        input.lines().collect(),
-        strategy.clone(),
-    );
+    let location_number_ranges =
+        day_5::calculate_lowest_location_number_with_ranges(input.lines().collect(), strategy);
 
     let after = std::time::Instant::now();
     println!("Time taken: {:?}", after.duration_since(before));

@@ -35,6 +35,7 @@ pub fn calculate_lowest_location_number_with_ranges(
     input: Vec<&str>,
     strategy: Vec<Category>,
 ) -> u64 {
+    //TODO: improve performance
     let (seeds, maps) = parse_input(input);
 
     let ranges = seeds
@@ -81,7 +82,7 @@ fn calculate_conversions(
 
             calculate_conversions(
                 maybe_next.unwrap(),
-                &map,
+                map,
                 &strategy.iter().skip(1).cloned().collect(),
             )
         }
@@ -90,7 +91,7 @@ fn calculate_conversions(
 
 fn calculate_conversion(input: u64, map: Vec<Conversion>) -> Option<u64> {
     let relevant_conversion = map.iter().find(|conversion| {
-        input >= conversion.source && input <= conversion.source + conversion.range - 1
+        input >= conversion.source && input < conversion.source + conversion.range
     });
 
     match relevant_conversion {
@@ -102,7 +103,7 @@ fn calculate_conversion(input: u64, map: Vec<Conversion>) -> Option<u64> {
 fn parse_conversion(input: &str) -> Option<Conversion> {
     let raw_parts: Vec<&str> = input.split(' ').collect();
 
-    match (raw_parts.get(0), raw_parts.get(1), raw_parts.get(2)) {
+    match (raw_parts.first(), raw_parts.get(1), raw_parts.get(2)) {
         (Some(dest), Some(source), Some(range)) => Some(Conversion {
             source: source.parse::<u64>().unwrap(),
             dest: dest.parse::<u64>().unwrap(),
@@ -144,7 +145,7 @@ fn map_category(input: &str) -> Option<Category> {
 }
 
 fn parse_map(input: Vec<&str>) -> Option<(Category, Vec<Conversion>)> {
-    let maybe_category = input.get(0).and_then(|x| parse_category(x));
+    let maybe_category = input.first().and_then(|x| parse_category(x));
     let maybe_conversions = input.iter().skip(1).map(|x| parse_conversion(x)).collect();
 
     match (maybe_category, maybe_conversions) {
@@ -155,15 +156,14 @@ fn parse_map(input: Vec<&str>) -> Option<(Category, Vec<Conversion>)> {
 
 fn parse_maps(input: Vec<Vec<&str>>) -> Option<HashMap<Category, Vec<Conversion>>> {
     let maybe_maps: Option<Vec<(Category, Vec<Conversion>)>> =
-        input.into_iter().map(|x| parse_map(x)).collect();
+        input.into_iter().map(parse_map).collect();
 
-    match maybe_maps {
-        Some(maps) => Some(maps.iter().fold(HashMap::new(), |mut acc, curr| {
+    maybe_maps.map(|maps| {
+        maps.iter().fold(HashMap::new(), |mut acc, curr| {
             acc.insert(curr.0, curr.1.clone());
             acc
-        })),
-        _ => None,
-    }
+        })
+    })
 }
 
 fn parse_raw_maps(input: Vec<&str>) -> Option<HashMap<Category, Vec<Conversion>>> {
