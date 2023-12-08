@@ -37,15 +37,10 @@ pub fn calculate_lowest_location_number_with_ranges(
 ) -> u64 {
     let (seeds, maps) = parse_input(input);
 
-    let first_from = seeds.get(0).unwrap().clone();
-    let first_to = first_from + seeds.get(1).unwrap();
-
-    let snd_from = seeds.get(2).unwrap().clone();
-    let snd_to = snd_from + seeds.get(3).unwrap();
-
-    (first_from..first_to)
-        .chain(snd_from..snd_to)
-        .into_iter()
+    seeds
+        .chunks(2)
+        .map(|x| (x[0]..=x[0] + x[1]))
+        .flatten()
         .map(|s| calculate_conversions(s, maps.clone(), strategy.clone()))
         .min()
         .unwrap()
