@@ -26,7 +26,7 @@ pub fn calculate_lowest_location_number(input: Vec<&str>, strategy: Vec<Category
 
     seeds
         .into_iter()
-        .map(|s| calculate_conversions(s, maps.clone(), strategy.clone()))
+        .map(|s| calculate_conversions(s, &maps, &strategy))
         .min()
         .unwrap()
 }
@@ -37,19 +37,39 @@ pub fn calculate_lowest_location_number_with_ranges(
 ) -> u64 {
     let (seeds, maps) = parse_input(input);
 
-    seeds
+    let ranges = seeds
         .chunks(2)
         .map(|x| (x[0]..=x[0] + x[1]))
-        .flatten()
-        .map(|s| calculate_conversions(s, maps.clone(), strategy.clone()))
+        .collect::<Vec<_>>();
+
+    let mut handles = vec![];
+
+    for range in ranges {
+        let maps = maps.clone();
+        let strategy = strategy.clone();
+
+        let handle = std::thread::spawn(move || {
+            range
+                .into_iter()
+                .map(|s| calculate_conversions(s, &maps, &strategy))
+                .min()
+                .unwrap()
+        });
+
+        handles.push(handle);
+    }
+
+    handles
+        .into_iter()
+        .map(|handle| handle.join().unwrap())
         .min()
         .unwrap()
 }
 
 fn calculate_conversions(
     source: u64,
-    map: HashMap<Category, Vec<Conversion>>,
-    strategy: Vec<Category>,
+    map: &HashMap<Category, Vec<Conversion>>,
+    strategy: &Vec<Category>,
 ) -> u64 {
     match strategy.is_empty() {
         true => source,
@@ -61,8 +81,8 @@ fn calculate_conversions(
 
             calculate_conversions(
                 maybe_next.unwrap(),
-                map,
-                strategy.into_iter().skip(1).collect(),
+                &map,
+                &strategy.iter().skip(1).cloned().collect(),
             )
         }
     }
@@ -387,7 +407,7 @@ fn should_calculate_conversions_based_on_corresponding_types() {
 
     let strategy = vec![Category::SOIL, Category::FERTILIZER];
 
-    let result = calculate_conversions(seed, map, strategy);
+    let result = calculate_conversions(seed, &map, &strategy);
 
     assert_eq!(result, 53);
 }
