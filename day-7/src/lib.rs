@@ -1,26 +1,9 @@
-use std::collections::HashMap;
+use std::{cmp::Ordering, collections::HashMap};
 
-#[derive(Debug, PartialEq, Clone, Ord, Eq, Hash)]
+#[derive(Debug, PartialEq, Clone, PartialOrd, Ord, Eq, Hash)]
 struct Hand {
-    cards: Vec<Card>,
+    cards: String,
     bid: u32,
-}
-
-#[derive(Debug, PartialEq, PartialOrd, Ord, Eq, Clone, Hash)]
-enum CardLabel {
-    Two,
-    Three,
-    Four,
-    Five,
-    Six,
-    Seven,
-    Eight,
-    Nine,
-    T,
-    J,
-    Q,
-    K,
-    A,
 }
 
 #[derive(Debug, PartialEq, PartialOrd, Ord, Eq, Clone, Hash)]
@@ -34,135 +17,111 @@ enum HandType {
     FiveOfAKind,
 }
 
-#[derive(Debug, PartialEq, Ord, Eq, Clone, Hash)]
-struct Card {
-    label: CardLabel,
-}
-
-impl Card {
-    fn from(c: char) -> Self {
-        Self {
-            label: map_label(c),
-        }
-    }
-}
-
-impl PartialOrd for Card {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.label.partial_cmp(&other.label)
-    }
-}
-
-fn map_label(c: char) -> CardLabel {
-    match c {
-        'A' => CardLabel::A,
-        'K' => CardLabel::K,
-        'Q' => CardLabel::Q,
-        'J' => CardLabel::J,
-        'T' => CardLabel::T,
-        '9' => CardLabel::Nine,
-        '8' => CardLabel::Eight,
-        '7' => CardLabel::Seven,
-        '6' => CardLabel::Six,
-        '5' => CardLabel::Five,
-        '4' => CardLabel::Four,
-        '3' => CardLabel::Three,
-        '2' => CardLabel::Two,
-        _ => panic!("The provided card label is not recognized"),
-    }
-}
-
 impl Hand {
     fn new(input: &str) -> Self {
         let cards = input.split(' ').nth(0).unwrap();
         let bid = input.split(' ').nth(1).unwrap().parse::<u32>().unwrap();
 
         Self {
-            cards: cards.chars().map(Card::from).collect(),
+            cards: cards.to_string(),
             bid,
         }
-    }
-
-    fn hand_type(&self) -> HandType {
-        if self.has_five_of_a_kind() {
-            HandType::FiveOfAKind
-        } else if self.has_four_of_a_kind() {
-            HandType::FourOfAKind
-        } else if self.has_full_house() {
-            HandType::FullHouse
-        } else if self.has_three_of_a_kind() {
-            HandType::ThreeOfAKind
-        } else if self.has_two_pairs() {
-            HandType::TwoPair
-        } else if self.has_one_pair() {
-            HandType::OnePair
-        } else if self.has_high_card() {
-            HandType::HighCard
-        } else {
-            panic!("The hand type is not recognized")
-        }
-    }
-
-    fn card_map(&self) -> HashMap<Card, u32> {
-        self.cards.iter().fold(HashMap::new(), |mut acc, x| {
-            *acc.entry(x.clone()).or_insert(0) += 1;
-            acc
-        })
-    }
-
-    fn has_one_pair(&self) -> bool {
-        self.card_map().values().filter(|x| **x == 2).count() == 1
-    }
-
-    fn has_two_pairs(&self) -> bool {
-        self.card_map().values().filter(|x| **x == 2).count() == 2
-    }
-
-    fn has_three_of_a_kind(&self) -> bool {
-        self.card_map().values().filter(|x| **x == 3).count() == 1
-    }
-
-    fn has_five_of_a_kind(&self) -> bool {
-        self.card_map().values().filter(|x| **x == 5).count() == 1
-    }
-
-    fn has_four_of_a_kind(&self) -> bool {
-        self.card_map().values().filter(|x| **x == 4).count() == 1
-    }
-
-    fn has_full_house(&self) -> bool {
-        self.has_one_pair() && self.has_three_of_a_kind()
-    }
-
-    fn has_high_card(&self) -> bool {
-        self.card_map().values().filter(|x| **x == 1).count() == 5
-    }
-}
-
-impl PartialOrd for Hand {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        let self_hand_type = self.hand_type();
-        let other_hand_type = other.hand_type();
-
-        self_hand_type.partial_cmp(&other_hand_type).and_then(|x| {
-            if x == std::cmp::Ordering::Equal {
-                self.cards.partial_cmp(&other.cards)
-            } else {
-                Some(x)
-            }
-        })
     }
 }
 
 pub fn calculate_total_winnings(input: Vec<&str>) -> u32 {
     let mut hands = input.iter().map(|x| Hand::new(x)).collect::<Vec<Hand>>();
 
-    hands.sort();
+    hands.sort_by(|a, b| sort_hand_type(a.clone(), b.clone()).unwrap());
 
     hands.iter().enumerate().fold(0, |mut acc, (i, x)| {
         acc += x.bid * (i + 1) as u32;
         acc
     })
+}
+
+pub fn calculate_total_winnings_with_joker(input: Vec<&str>) -> u32 {
+    let mut hands = input.iter().map(|x| Hand::new(x)).collect::<Vec<Hand>>();
+
+    hands.sort_by(|a, b| sort_hand_type_with_joker(a.clone(), b.clone()).unwrap());
+
+    hands.iter().enumerate().fold(0, |mut acc, (i, x)| {
+        acc += x.bid * (i + 1) as u32;
+        acc
+    })
+}
+
+fn sort_hand_type_with_joker(first: Hand, second: Hand) -> Option<Ordering> {
+    let first_hand_type = max_hand_type_with_joker(first.clone());
+    let second_hand_type = max_hand_type_with_joker(second.clone());
+
+    first_hand_type
+        .partial_cmp(&second_hand_type)
+        .and_then(|x| match x {
+            Ordering::Equal => sort_cards(first, second, "J23456789TQKA"),
+            _ => Some(x),
+        })
+}
+
+fn sort_hand_type(first: Hand, second: Hand) -> Option<Ordering> {
+    let first_hand_type = hand_type(first.clone());
+    let second_hand_type = hand_type(second.clone());
+
+    first_hand_type
+        .partial_cmp(&second_hand_type)
+        .and_then(|x| match x {
+            Ordering::Equal => sort_cards(first, second, "23456789TJQKA"),
+            _ => Some(x),
+        })
+}
+
+fn max_hand_type_with_joker(hand: Hand) -> HandType {
+    "23456789TJQKA"
+        .chars()
+        .map(|x| {
+            let mut hand = hand.clone();
+            hand.cards = hand.cards.replace('J', &x.to_string());
+            hand_type(hand)
+        })
+        .max()
+        .unwrap()
+}
+
+fn sort_cards(first: Hand, second: Hand, card_order: &str) -> Option<Ordering> {
+    let first_card = first
+        .cards
+        .chars()
+        .map(|x| card_order.find(x).unwrap())
+        .collect::<Vec<usize>>();
+
+    let second_card = second
+        .cards
+        .chars()
+        .map(|x| card_order.find(x).unwrap())
+        .collect::<Vec<usize>>();
+
+    Some(first_card.partial_cmp(&second_card).unwrap())
+}
+
+fn hand_type(hand: Hand) -> HandType {
+    let counts = hand.cards.chars().fold(HashMap::new(), |mut acc, x| {
+        *acc.entry(x).or_insert(0) += 1;
+        acc
+    });
+
+    match counts.values().max() {
+        Some(5) => HandType::FiveOfAKind,
+        Some(4) => HandType::FourOfAKind,
+        Some(3) => match counts.values().any(|x| *x == 2) {
+            true => HandType::FullHouse,
+            false => HandType::ThreeOfAKind,
+        },
+        Some(2) => match counts.values().filter(|x| **x == 2).count() == 2 {
+            true => HandType::TwoPair,
+            false => HandType::OnePair,
+        },
+        _ => HandType::HighCard,
+    }
 }
 
 #[test]
@@ -174,28 +133,12 @@ fn should_parse_hand_with_one_pair() {
     assert_eq!(
         hand,
         Hand {
-            cards: vec![
-                Card {
-                    label: CardLabel::Three,
-                },
-                Card {
-                    label: CardLabel::Two,
-                },
-                Card {
-                    label: CardLabel::T,
-                },
-                Card {
-                    label: CardLabel::Three,
-                },
-                Card {
-                    label: CardLabel::K,
-                },
-            ],
+            cards: String::from("32T3K"),
             bid: 765,
         }
     );
 
-    assert_eq!(hand.hand_type(), HandType::OnePair);
+    assert_eq!(hand_type(hand), HandType::OnePair);
 }
 
 #[test]
@@ -207,28 +150,12 @@ fn should_parse_hand_with_two_pairs() {
     assert_eq!(
         hand,
         Hand {
-            cards: vec![
-                Card {
-                    label: CardLabel::Three,
-                },
-                Card {
-                    label: CardLabel::Two,
-                },
-                Card {
-                    label: CardLabel::K,
-                },
-                Card {
-                    label: CardLabel::Three,
-                },
-                Card {
-                    label: CardLabel::K,
-                },
-            ],
+            cards: String::from("32K3K"),
             bid: 765,
         }
     );
 
-    assert_eq!(hand.hand_type(), HandType::TwoPair);
+    assert_eq!(hand_type(hand), HandType::TwoPair);
 }
 
 #[test]
@@ -240,28 +167,12 @@ fn should_parse_hand_with_three_of_a_kind() {
     assert_eq!(
         hand,
         Hand {
-            cards: vec![
-                Card {
-                    label: CardLabel::T,
-                },
-                Card {
-                    label: CardLabel::Five,
-                },
-                Card {
-                    label: CardLabel::Five,
-                },
-                Card {
-                    label: CardLabel::J,
-                },
-                Card {
-                    label: CardLabel::Five,
-                },
-            ],
+            cards: String::from("T55J5"),
             bid: 65,
         }
     );
 
-    assert_eq!(hand.hand_type(), HandType::ThreeOfAKind);
+    assert_eq!(hand_type(hand), HandType::ThreeOfAKind);
 }
 
 #[test]
@@ -273,28 +184,12 @@ fn should_parse_hand_with_four_of_a_kind() {
     assert_eq!(
         hand,
         Hand {
-            cards: vec![
-                Card {
-                    label: CardLabel::Five,
-                },
-                Card {
-                    label: CardLabel::Five,
-                },
-                Card {
-                    label: CardLabel::Five,
-                },
-                Card {
-                    label: CardLabel::Five,
-                },
-                Card {
-                    label: CardLabel::J,
-                },
-            ],
+            cards: String::from("5555J"),
             bid: 65,
         }
     );
 
-    assert_eq!(hand.hand_type(), HandType::FourOfAKind);
+    assert_eq!(hand_type(hand), HandType::FourOfAKind);
 }
 
 #[test]
@@ -306,28 +201,12 @@ fn should_parse_hand_with_five_of_a_kind() {
     assert_eq!(
         hand,
         Hand {
-            cards: vec![
-                Card {
-                    label: CardLabel::Five,
-                },
-                Card {
-                    label: CardLabel::Five,
-                },
-                Card {
-                    label: CardLabel::Five,
-                },
-                Card {
-                    label: CardLabel::Five,
-                },
-                Card {
-                    label: CardLabel::Five,
-                },
-            ],
+            cards: String::from("55555"),
             bid: 65,
         }
     );
 
-    assert_eq!(hand.hand_type(), HandType::FiveOfAKind);
+    assert_eq!(hand_type(hand), HandType::FiveOfAKind);
 }
 
 #[test]
@@ -339,28 +218,12 @@ fn should_parse_hand_with_full_house() {
     assert_eq!(
         hand,
         Hand {
-            cards: vec![
-                Card {
-                    label: CardLabel::Five,
-                },
-                Card {
-                    label: CardLabel::Five,
-                },
-                Card {
-                    label: CardLabel::Five,
-                },
-                Card {
-                    label: CardLabel::J,
-                },
-                Card {
-                    label: CardLabel::J,
-                },
-            ],
+            cards: String::from("555JJ"),
             bid: 65,
         }
     );
 
-    assert_eq!(hand.hand_type(), HandType::FullHouse);
+    assert_eq!(hand_type(hand), HandType::FullHouse);
 }
 
 #[test]
@@ -371,220 +234,65 @@ fn should_parse_hand_with_high_card() {
     assert_eq!(
         hand,
         Hand {
-            cards: vec![
-                Card {
-                    label: CardLabel::A,
-                },
-                Card {
-                    label: CardLabel::K,
-                },
-                Card {
-                    label: CardLabel::Q,
-                },
-                Card {
-                    label: CardLabel::J,
-                },
-                Card {
-                    label: CardLabel::T,
-                },
-            ],
+            cards: String::from("AKQJT"),
             bid: 65,
         }
     );
 
-    assert_eq!(hand.hand_type(), HandType::HighCard);
+    assert_eq!(hand_type(hand), HandType::HighCard);
 }
 
 #[test]
-fn should_parse_a_card() {
-    let input = 'A';
-
-    let card = Card::from(input);
-
-    assert_eq!(
-        card,
-        Card {
-            label: CardLabel::A,
-        }
-    );
-}
-
-#[test]
-fn should_sort_cards() {
-    let mut input = vec![
-        Card {
-            label: CardLabel::J,
-        },
-        Card {
-            label: CardLabel::A,
-        },
-        Card {
-            label: CardLabel::Two,
-        },
-        Card {
-            label: CardLabel::K,
-        },
-    ];
-
-    input.sort();
-
-    assert_eq!(
-        input,
-        vec![
-            Card {
-                label: CardLabel::Two,
-            },
-            Card {
-                label: CardLabel::J,
-            },
-            Card {
-                label: CardLabel::K,
-            },
-            Card {
-                label: CardLabel::A,
-            },
-        ]
-    );
-}
-
-#[test]
-fn should_sort_hands_without_high_card() {
+fn should_sort_hands_with_different_types() {
     let full_house = Hand {
-        cards: vec![
-            Card {
-                label: CardLabel::Five,
-            },
-            Card {
-                label: CardLabel::Five,
-            },
-            Card {
-                label: CardLabel::Five,
-            },
-            Card {
-                label: CardLabel::J,
-            },
-            Card {
-                label: CardLabel::J,
-            },
-        ],
+        cards: String::from("555JJ"),
         bid: 65,
     };
 
     let high_card = Hand {
-        cards: vec![
-            Card {
-                label: CardLabel::A,
-            },
-            Card {
-                label: CardLabel::K,
-            },
-            Card {
-                label: CardLabel::Q,
-            },
-            Card {
-                label: CardLabel::J,
-            },
-            Card {
-                label: CardLabel::T,
-            },
-        ],
+        cards: String::from("AKQJT"),
         bid: 65,
     };
 
-    let three_of_a_kind = Hand {
-        cards: vec![
-            Card {
-                label: CardLabel::T,
-            },
-            Card {
-                label: CardLabel::Five,
-            },
-            Card {
-                label: CardLabel::Five,
-            },
-            Card {
-                label: CardLabel::J,
-            },
-            Card {
-                label: CardLabel::Five,
-            },
-        ],
+    let mut hands = vec![full_house.clone(), high_card.clone()];
+    hands.sort_by(|a, b| sort_hand_type(a.clone(), b.clone()).unwrap());
+
+    assert_eq!(hands, vec![high_card, full_house]);
+}
+
+#[test]
+fn should_sort_hands_with_same_type_and_different_cards() {
+    let full_house_1 = Hand {
+        cards: String::from("555JJ"),
         bid: 65,
     };
 
-    let mut input = vec![
-        full_house.clone(),
-        high_card.clone(),
-        three_of_a_kind.clone(),
-    ];
+    let full_house_2 = Hand {
+        cards: String::from("555TT"),
+        bid: 65,
+    };
 
-    input.sort();
+    let mut hands = vec![full_house_1.clone(), full_house_2.clone()];
 
-    assert_eq!(input, vec![high_card, three_of_a_kind, full_house]);
+    hands.sort_by(|a, b| sort_hand_type(a.clone(), b.clone()).unwrap());
+
+    assert_eq!(hands, vec![full_house_2, full_house_1]);
 }
 
 #[test]
 fn should_sort_hands_with_high_cards() {
     let high_card_six = Hand {
-        cards: vec![
-            Card {
-                label: CardLabel::Two,
-            },
-            Card {
-                label: CardLabel::Three,
-            },
-            Card {
-                label: CardLabel::Four,
-            },
-            Card {
-                label: CardLabel::Five,
-            },
-            Card {
-                label: CardLabel::Six,
-            },
-        ],
+        cards: String::from("AKQJT"),
         bid: 65,
     };
 
     let high_card_seven = Hand {
-        cards: vec![
-            Card {
-                label: CardLabel::Two,
-            },
-            Card {
-                label: CardLabel::Three,
-            },
-            Card {
-                label: CardLabel::Four,
-            },
-            Card {
-                label: CardLabel::Five,
-            },
-            Card {
-                label: CardLabel::Seven,
-            },
-        ],
+        cards: String::from("AKQJT"),
         bid: 65,
     };
 
     let high_card_eight = Hand {
-        cards: vec![
-            Card {
-                label: CardLabel::Two,
-            },
-            Card {
-                label: CardLabel::Three,
-            },
-            Card {
-                label: CardLabel::Four,
-            },
-            Card {
-                label: CardLabel::Five,
-            },
-            Card {
-                label: CardLabel::Eight,
-            },
-        ],
+        cards: String::from("AKQJT"),
         bid: 65,
     };
 
@@ -602,44 +310,12 @@ fn should_sort_hands_with_high_cards() {
 #[test]
 fn should_sort_hands_with_same_type() {
     let four_of_a_kind_1 = Hand {
-        cards: vec![
-            Card {
-                label: CardLabel::Three,
-            },
-            Card {
-                label: CardLabel::Three,
-            },
-            Card {
-                label: CardLabel::Three,
-            },
-            Card {
-                label: CardLabel::Three,
-            },
-            Card {
-                label: CardLabel::Two,
-            },
-        ],
+        cards: String::from("5555J"),
         bid: 65,
     };
 
     let four_of_a_kind_2 = Hand {
-        cards: vec![
-            Card {
-                label: CardLabel::Two,
-            },
-            Card {
-                label: CardLabel::A,
-            },
-            Card {
-                label: CardLabel::A,
-            },
-            Card {
-                label: CardLabel::A,
-            },
-            Card {
-                label: CardLabel::A,
-            },
-        ],
+        cards: String::from("5555J"),
         bid: 65,
     };
 
@@ -653,44 +329,12 @@ fn should_sort_hands_with_same_type() {
 #[test]
 fn should_sort_hands_with_both_have_a_full_house() {
     let full_house_1 = Hand {
-        cards: vec![
-            Card {
-                label: CardLabel::Seven,
-            },
-            Card {
-                label: CardLabel::Seven,
-            },
-            Card {
-                label: CardLabel::Eight,
-            },
-            Card {
-                label: CardLabel::Eight,
-            },
-            Card {
-                label: CardLabel::Eight,
-            },
-        ],
+        cards: String::from("555JJ"),
         bid: 65,
     };
 
     let full_house_2 = Hand {
-        cards: vec![
-            Card {
-                label: CardLabel::Seven,
-            },
-            Card {
-                label: CardLabel::Seven,
-            },
-            Card {
-                label: CardLabel::Seven,
-            },
-            Card {
-                label: CardLabel::Eight,
-            },
-            Card {
-                label: CardLabel::Eight,
-            },
-        ],
+        cards: String::from("555JJ"),
         bid: 65,
     };
 
@@ -699,4 +343,14 @@ fn should_sort_hands_with_both_have_a_full_house() {
     hands.sort();
 
     assert_eq!(hands, vec![full_house_2, full_house_1]);
+}
+
+#[test]
+fn should_find_max_hand_type_with_joker() {
+    let hand = Hand {
+        cards: String::from("KTJJT"),
+        bid: 65,
+    };
+
+    assert_eq!(max_hand_type_with_joker(hand), HandType::FourOfAKind);
 }
