@@ -23,7 +23,7 @@ pub fn calculate_number_of_enclosing_points(board: Vec<&str>) -> i32 {
     let path = find_longest_path(board.clone());
     let area = shoelace_formula(path.clone());
 
-    area + 1 - (path.clone().len() / 2) as i32
+    area + 1 - (path.len() / 2) as i32
 }
 
 fn find_longest_path(board: Vec<&str>) -> Vec<(i32, i32)> {

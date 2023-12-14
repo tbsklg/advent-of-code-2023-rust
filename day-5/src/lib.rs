@@ -173,7 +173,7 @@ fn parse_raw_maps(input: Vec<&str>) -> Option<HashMap<Category, Vec<Conversion>>
 }
 
 fn parse_input(input: Vec<&str>) -> (Vec<u64>, HashMap<Category, Vec<Conversion>>) {
-    let seeds = parse_seeds(input.get(0).unwrap());
+    let seeds = parse_seeds(input.first().unwrap());
     let maps = parse_raw_maps(input.into_iter().skip(2).collect()).unwrap();
 
     (seeds, maps)

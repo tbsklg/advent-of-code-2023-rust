@@ -19,7 +19,7 @@ enum HandType {
 
 impl Hand {
     fn new(input: &str) -> Self {
-        let cards = input.split(' ').nth(0).unwrap();
+        let cards = input.split(' ').next().unwrap();
         let bid = input.split(' ').nth(1).unwrap().parse::<u32>().unwrap();
 
         Self {

@@ -11,7 +11,7 @@ pub fn calc_extrapolated_values_to_right(input: Vec<&str>) -> i32 {
         .map(|x| parse_line(x))
         .map(|x| {
             (
-                x.last().unwrap().clone(),
+                *x.last().unwrap(),
                 capture_till_difference_is_zero_to_right(x),
             )
         })
@@ -25,7 +25,7 @@ pub fn calc_extrapolated_values_to_left(input: Vec<&str>) -> i32 {
         .map(|x| parse_line(x))
         .map(|x| {
             (
-                x.first().unwrap().clone(),
+                *x.first().unwrap(),
                 capture_till_difference_is_zero_to_left(x),
             )
         })
@@ -39,21 +39,21 @@ fn calc_differences(input: Vec<i32>) -> Vec<i32> {
     input
         .iter()
         .zip(tail)
-        .map(|(x, y)| (y - x) as i32)
+        .map(|(x, y)| (y - x))
         .collect()
 }
 
 fn capture_till_difference_is_zero_to_right(input: Vec<i32>) -> i32 {
-    let differences = calc_differences(input.clone()).clone();
+    let differences = calc_differences(input);
 
     fn capture_till_zero(input: Vec<i32>, result: Vec<i32>) -> Vec<i32> {
-        let all_zero = input.clone().iter().all(|x| *x == 0);
+        let all_zero = input.iter().all(|x| *x == 0);
 
         match all_zero {
             true => result,
             false => {
-                let last = input.last().unwrap().clone();
-                let differences = calc_differences(input).clone();
+                let last = *input.last().unwrap();
+                let differences = calc_differences(input);
 
                 capture_till_zero(differences, [vec![last], result].concat())
             }
@@ -64,16 +64,16 @@ fn capture_till_difference_is_zero_to_right(input: Vec<i32>) -> i32 {
 }
 
 fn capture_till_difference_is_zero_to_left(input: Vec<i32>) -> i32 {
-    let differences = calc_differences(input.clone()).clone();
+    let differences = calc_differences(input);
 
     fn capture_till_zero(input: Vec<i32>, result: Vec<i32>) -> Vec<i32> {
-        let all_zero = input.clone().iter().all(|x| *x == 0);
+        let all_zero = input.iter().all(|x| *x == 0);
 
         match all_zero {
             true => result,
             false => {
-                let first = input.first().unwrap().clone();
-                let differences = calc_differences(input).clone();
+                let first = *input.first().unwrap();
+                let differences = calc_differences(input);
 
                 capture_till_zero(differences, [vec![first], result].concat())
             }

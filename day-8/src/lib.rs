@@ -16,7 +16,7 @@ lazy_static! {
 }
 
 pub fn calculate_steps(input: Vec<&str>, start_node: &str, end_node: &str) -> u64 {
-    let mut directions = parse_directions(input.get(0).unwrap());
+    let mut directions = parse_directions(input.first().unwrap());
     let network = create_network(input.get(2..).unwrap().to_vec());
 
     let mut steps = 0;
@@ -41,7 +41,7 @@ pub fn calculate_steps(input: Vec<&str>, start_node: &str, end_node: &str) -> u6
 pub fn calcualte_steps_with_multiple_starts(input: Vec<&str>) -> u64 {
     let network = create_network(input.get(2..).unwrap().to_vec());
 
-    let starting_nodes = find_starting_nodes(network.clone());
+    let starting_nodes = find_starting_nodes(network);
 
     let steps = starting_nodes
         .iter()
@@ -120,7 +120,7 @@ fn should_find_starting_nodes_that_end_with_a() {
     let input = vec!["22A = (22B, XXX)", "11A = (11B, XXX)", "33C = (33B, XXX)"];
 
     let network = create_network(input);
-    let starting_nodes = find_starting_nodes(network.clone());
+    let starting_nodes = find_starting_nodes(network);
 
     assert_eq!(starting_nodes, vec!["11A", "22A"]);
 }
