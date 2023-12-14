@@ -19,6 +19,41 @@ pub fn calculate_steps(board: Vec<&str>) -> i32 {
     *longest_path.iter().max().unwrap()
 }
 
+pub fn calculate_number_of_enclosing_points(board: Vec<&str>) -> i32 {
+    let path = find_longest_path(board.clone());
+    let area = shoelace_formula(path.clone());
+
+    area + 1 - (path.clone().len() / 2) as i32
+}
+
+fn find_longest_path(board: Vec<&str>) -> Vec<(i32, i32)> {
+    let start = find_start_position(board.clone()).unwrap();
+
+    let longest_path = [
+        find_path(board.clone(), (start, Dir::N)),
+        find_path(board.clone(), (start, Dir::S)),
+        find_path(board.clone(), (start, Dir::E)),
+        find_path(board.clone(), (start, Dir::W)),
+    ];
+
+    longest_path
+        .iter()
+        .max_by_key(|path| path.clone().len())
+        .unwrap()
+        .clone()
+}
+
+fn shoelace_formula(points: Vec<(i32, i32)>) -> i32 {
+    let mut sum = 0;
+
+    for i in 0..points.len() {
+        let j = (i + 1) % points.len();
+        sum += points[i].0 * points[j].1 - points[j].0 * points[i].1;
+    }
+
+    sum.abs() / 2
+}
+
 fn find_start_position(board: Vec<&str>) -> Option<(i32, i32)> {
     board
         .into_iter()
@@ -77,17 +112,81 @@ fn walk(board: Vec<&str>, pos: ((i32, i32), Dir), steps: i32) -> i32 {
         .unwrap_or(steps)
 }
 
+fn find_path(board: Vec<&str>, start: ((i32, i32), Dir)) -> Vec<(i32, i32)> {
+    let mut path = vec![];
+    let mut pos = start;
+
+    loop {
+        let (row, col) = pos.0;
+
+        if row < 0 || col < 0 {
+            break;
+        }
+
+        let tile = get_tile(board.clone(), pos.0);
+        let next_pos = tile.and_then(|tile| next_position(pos.0, tile, pos.1));
+
+        match next_pos {
+            Some(next_pos) => {
+                let next_tile = get_tile(board.clone(), next_pos.0);
+                if next_tile == Some('S') {
+                    path.push(next_pos.0);
+                    break;
+                } else {
+                    path.push(pos.0);
+                    pos = next_pos;
+                }
+            }
+            None => {
+                path.push(pos.0);
+                break;
+            }
+        }
+    }
+
+    path
+}
+
 fn get_tile(board: Vec<&str>, (row, col): (i32, i32)) -> Option<char> {
     board[row as usize].chars().nth(col as usize)
 }
 
 #[test]
-fn should_number_of_steps_from_start() {
+fn should_count_number_of_steps_from_start() {
     let board = vec!["..F7.", ".FJ|.", "SJ.L7", "|F--J", "LJ..."];
 
     let steps = calculate_steps(board);
 
     assert_eq!(steps, 8);
+}
+
+#[test]
+fn should_find_the_longest_path_from_start() {
+    let board = vec!["..F7.", ".FJ|.", "SJ.L7", "|F--J", "LJ..."];
+
+    let path = find_longest_path(board);
+
+    assert_eq!(
+        path,
+        vec![
+            (2, 0),
+            (3, 0),
+            (4, 0),
+            (4, 1),
+            (3, 1),
+            (3, 2),
+            (3, 3),
+            (3, 4),
+            (2, 4),
+            (2, 3),
+            (1, 3),
+            (0, 3),
+            (0, 2),
+            (1, 2),
+            (1, 1),
+            (2, 1),
+        ]
+    );
 }
 
 #[test]
@@ -142,4 +241,13 @@ fn should_return_none_if_no_start_position_is_availabe() {
     let start_position = find_start_position(board);
 
     assert_eq!(start_position, Some((2, 0)));
+}
+
+#[test]
+fn should_calcualte_the_area_of_a_pentagon() {
+    let points = vec![(1, 6), (3, 1), (7, 2), (4, 4), (8, 5)];
+
+    let area = shoelace_formula(points);
+
+    assert_eq!(area, 16);
 }
