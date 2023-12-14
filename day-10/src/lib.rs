@@ -184,7 +184,7 @@ fn should_find_the_longest_path_from_start() {
             (0, 2),
             (1, 2),
             (1, 1),
-            (2, 1),
+            (2, 0),
         ]
     );
 }
