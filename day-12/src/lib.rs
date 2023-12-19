@@ -9,7 +9,7 @@ pub fn arrangements(input: Vec<&str>) -> u32 {
                     .unwrap()
                     .clone()
                     .split(',')
-                    .map(|x| x.parse::<u32>().unwrap().clone())
+                    .map(|x| x.parse::<u32>().unwrap())
                     .collect::<Vec<u32>>(),
             )
         })
@@ -24,15 +24,15 @@ fn count_arrangements(input: String, groups: Vec<u32>) -> Option<u32> {
 
         match (has_question_mark, is_valid) {
             (true, false) => Some(
-                arrangements(input.replacen("?", "#", 1), groups.clone(), count).unwrap_or(0)
-                    + arrangements(input.replacen("?", ".", 1), groups.clone(), count).unwrap_or(0),
+                arrangements(input.replacen('?', "#", 1), groups.clone(), count).unwrap_or(0)
+                    + arrangements(input.replacen('?', ".", 1), groups, count).unwrap_or(0),
             ),
             (false, true) => Some(count + 1),
             _ => None,
         }
     }
 
-    arrangements(input.clone(), groups.clone(), 0)
+    arrangements(input, groups, 0)
 }
 
 fn is_valid(input: String, groups: Vec<u32>) -> bool {
