@@ -4,10 +4,9 @@ pub fn arrangements(input: Vec<&str>) -> u32 {
         .map(|x| x.split(' '))
         .map(|mut x| {
             (
-                x.next().unwrap().clone().to_string(),
+                x.next().unwrap().to_string(),
                 x.next()
                     .unwrap()
-                    .clone()
                     .split(',')
                     .map(|x| x.parse::<u32>().unwrap())
                     .collect::<Vec<u32>>(),
@@ -19,16 +18,15 @@ pub fn arrangements(input: Vec<&str>) -> u32 {
 
 fn count_arrangements(input: String, groups: Vec<u32>) -> Option<u32> {
     fn arrangements(input: String, groups: Vec<u32>, count: u32) -> Option<u32> {
-        let has_question_mark = input.contains('?');
-        let is_valid = is_valid(input.clone(), groups.clone());
-
-        match (has_question_mark, is_valid) {
-            (true, false) => Some(
+        if input.contains('?') {
+            Some(
                 arrangements(input.replacen('?', "#", 1), groups.clone(), count).unwrap_or(0)
                     + arrangements(input.replacen('?', ".", 1), groups, count).unwrap_or(0),
-            ),
-            (false, true) => Some(count + 1),
-            _ => None,
+            )
+        } else if is_valid(input, groups) {
+            Some(count + 1)
+        } else {
+            None
         }
     }
 
@@ -36,13 +34,16 @@ fn count_arrangements(input: String, groups: Vec<u32>) -> Option<u32> {
 }
 
 fn is_valid(input: String, groups: Vec<u32>) -> bool {
-    !input.contains('?')
-        && input
-            .split('.')
-            .filter(|x| !x.is_empty() && !x.contains('?'))
-            .map(|x| x.len())
+    let split_by_dot = input
+        .split('.')
+        .filter(|x| !x.is_empty())
+        .collect::<Vec<&str>>();
+
+    split_by_dot.len() == groups.len()
+        && split_by_dot
+            .iter()
             .zip(groups)
-            .all(|(x, y)| x == y as usize)
+            .all(|(x, y)| x.len() == y as usize)
 }
 
 #[test]
@@ -79,4 +80,14 @@ fn should_count_arrangements() {
     let arrangements = count_arrangements(input.to_string(), groups);
 
     assert_eq!(arrangements, Some(4));
+}
+
+#[test]
+fn should_count_arrangements_for_large_example() {
+    let input = "?###????????";
+    let groups = vec![3, 2, 1];
+
+    let arrangements = count_arrangements(input.to_string(), groups);
+
+    assert_eq!(arrangements, Some(10));
 }
