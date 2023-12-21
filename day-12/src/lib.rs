@@ -49,7 +49,7 @@ fn count_arrangements(
     groups: Vec<u32>,
     cache: &mut HashMap<(String, Vec<u32>), u64>,
 ) -> u64 {
-    if input == "" {
+    if input.is_empty() {
         return match groups.is_empty() {
             true => 1,
             false => 0,
@@ -63,31 +63,27 @@ fn count_arrangements(
         };
     }
 
-    let head_group = groups.iter().nth(0).unwrap().clone();
-    let head_input = input.chars().nth(0).unwrap();
+    let head_group = *groups.iter().nth(0).unwrap();
+    let head_input = input.chars().next().unwrap();
     let input_len = input.len() as u32;
 
     if cache.contains_key(&(input.clone(), groups.clone())) {
-        return cache.get(&(input.clone(), groups.clone())).unwrap().clone();
+        return *cache.get(&(input, groups)).unwrap();
     }
 
-    let mut result = 0 as u64;
+    let mut result = 0_u64;
 
     if head_input == '.' || head_input == '?' {
         result += count_arrangements(input[1..].to_string(), groups.clone(), cache);
     }
 
-    if head_input == '#' || head_input == '?' {
-        if head_group <= input_len
-            && !input.chars().take(head_group as usize).any(|x| x == '.')
-            && (head_group == input_len || input.chars().nth(head_group as usize).unwrap() != '#')
-        {
-            result += count_arrangements(
-                input.chars().skip(head_group as usize + 1).collect(),
-                groups.clone().into_iter().skip(1).collect(),
-                cache,
-            );
-        }
+    if (head_input == '#' || head_input == '?') && head_group <= input_len
+            && !input.chars().take(head_group as usize).any(|x| x == '.') && (head_group == input_len || input.chars().nth(head_group as usize).unwrap() != '#') {
+        result += count_arrangements(
+            input.chars().skip(head_group as usize + 1).collect(),
+            groups.clone().into_iter().skip(1).collect(),
+            cache,
+        );
     }
 
     cache.insert((input, groups), result);
