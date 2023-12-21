@@ -1,4 +1,8 @@
-pub fn arrangements(input: Vec<&str>) -> u32 {
+use std::{collections::HashMap, iter::repeat};
+
+pub fn arrangements(input: Vec<&str>) -> u64 {
+    let cache = &mut HashMap::<(String, Vec<u32>), u64>::new();
+
     input
         .iter()
         .map(|x| x.split(' '))
@@ -12,64 +16,83 @@ pub fn arrangements(input: Vec<&str>) -> u32 {
                     .collect::<Vec<u32>>(),
             )
         })
-        .map(|(input, groups)| count_arrangements(input, groups).unwrap_or(0))
+        .map(|(input, groups)| count_arrangements(input, groups, cache))
         .sum()
 }
 
-fn count_arrangements(input: String, groups: Vec<u32>) -> Option<u32> {
-    fn arrangements(input: String, groups: Vec<u32>, count: u32) -> Option<u32> {
-        if input.contains('?') {
-            Some(
-                arrangements(input.replacen('?', "#", 1), groups.clone(), count).unwrap_or(0)
-                    + arrangements(input.replacen('?', ".", 1), groups, count).unwrap_or(0),
+pub fn arrangements_five(input: Vec<&str>) -> u64 {
+    let cache = &mut HashMap::<(String, Vec<u32>), u64>::new();
+
+    input
+        .iter()
+        .map(|x| x.split(' '))
+        .map(|mut x| {
+            (
+                repeat(x.next().unwrap().to_string())
+                    .take(5)
+                    .collect::<Vec<String>>()
+                    .join("?"),
+                x.next()
+                    .unwrap()
+                    .split(',')
+                    .map(|x| x.parse::<u32>().unwrap())
+                    .collect::<Vec<u32>>()
+                    .repeat(5),
             )
-        } else if is_valid(input, groups) {
-            Some(count + 1)
-        } else {
-            None
+        })
+        .map(|(input, groups)| count_arrangements(input, groups, cache))
+        .sum()
+}
+
+fn count_arrangements(
+    input: String,
+    groups: Vec<u32>,
+    cache: &mut HashMap<(String, Vec<u32>), u64>,
+) -> u64 {
+    if input == "" {
+        return match groups.is_empty() {
+            true => 1,
+            false => 0,
+        };
+    }
+
+    if groups.is_empty() {
+        return match input.contains('#') {
+            true => 0,
+            false => 1,
+        };
+    }
+
+    let head_group = groups.iter().nth(0).unwrap().clone();
+    let head_input = input.chars().nth(0).unwrap();
+    let input_len = input.len() as u32;
+
+    if cache.contains_key(&(input.clone(), groups.clone())) {
+        return cache.get(&(input.clone(), groups.clone())).unwrap().clone();
+    }
+
+    let mut result = 0 as u64;
+
+    if head_input == '.' || head_input == '?' {
+        result += count_arrangements(input[1..].to_string(), groups.clone(), cache);
+    }
+
+    if head_input == '#' || head_input == '?' {
+        if head_group <= input_len
+            && !input.chars().take(head_group as usize).any(|x| x == '.')
+            && (head_group == input_len || input.chars().nth(head_group as usize).unwrap() != '#')
+        {
+            result += count_arrangements(
+                input.chars().skip(head_group as usize + 1).collect(),
+                groups.clone().into_iter().skip(1).collect(),
+                cache,
+            );
         }
     }
 
-    arrangements(input, groups, 0)
-}
+    cache.insert((input, groups), result);
 
-fn is_valid(input: String, groups: Vec<u32>) -> bool {
-    let split_by_dot = input
-        .split('.')
-        .filter(|x| !x.is_empty())
-        .collect::<Vec<&str>>();
-
-    split_by_dot.len() == groups.len()
-        && split_by_dot
-            .iter()
-            .zip(groups)
-            .all(|(x, y)| x.len() == y as usize)
-}
-
-#[test]
-fn should_validate_input_with_question_marks() {
-    let input = "???.###";
-    let groups = vec![1, 1, 3];
-
-    let arrangements = is_valid(input.to_string(), groups);
-
-    assert_eq!(arrangements, false);
-}
-
-#[test]
-fn should_validate_input_without_question_marks() {
-    let valid_inputs = vec![
-        ("#.#.###", vec![1, 1, 3]),
-        (".#...#....###.", vec![1, 1, 3]),
-        (".#.###.#.######", vec![1, 3, 1, 6]),
-        ("####.#...#...", vec![4, 1, 1]),
-    ];
-
-    for (input, groups) in valid_inputs {
-        let arrangements = is_valid(input.to_string(), groups);
-
-        assert_eq!(arrangements, true);
-    }
+    result
 }
 
 #[test]
@@ -77,9 +100,9 @@ fn should_count_arrangements() {
     let input = ".??..??...?##.";
     let groups = vec![1, 1, 3];
 
-    let arrangements = count_arrangements(input.to_string(), groups);
+    let arrangements = count_arrangements(input.to_string(), groups, &mut HashMap::new());
 
-    assert_eq!(arrangements, Some(4));
+    assert_eq!(arrangements, 4);
 }
 
 #[test]
@@ -87,7 +110,7 @@ fn should_count_arrangements_for_large_example() {
     let input = "?###????????";
     let groups = vec![3, 2, 1];
 
-    let arrangements = count_arrangements(input.to_string(), groups);
+    let arrangements = count_arrangements(input.to_string(), groups, &mut HashMap::new());
 
-    assert_eq!(arrangements, Some(10));
+    assert_eq!(arrangements, 10);
 }

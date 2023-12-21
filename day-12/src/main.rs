@@ -7,4 +7,8 @@ fn main() {
     println!("Trying to solve part 1...");
     let arrangements = day_12::arrangements(input.lines().collect());
     println!("Solution is: {}", arrangements);
+
+    println!("Trying to solve part 2...");
+    let arrangements_five = day_12::arrangements_five(input.lines().collect());
+    println!("Solution is: {}", arrangements_five);
 }
