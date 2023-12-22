@@ -67,14 +67,6 @@ fn transpose(input: &Vec<&str>) -> Vec<String> {
     result
 }
 
-fn vertical_line(input: &Vec<&str>, pos: usize) -> Vec<char> {
-    input.iter().map(|x| x.chars().nth(pos).unwrap()).collect()
-}
-
-fn horizontal_line(input: &Vec<&str>, pos: usize) -> Vec<char> {
-    input.get(pos).unwrap().chars().collect()
-}
-
 #[test]
 fn should_count_columns_for_a_vertical_mirror() {
     let input = vec![
