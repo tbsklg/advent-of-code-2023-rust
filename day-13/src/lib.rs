@@ -2,7 +2,7 @@ pub fn notes(input: Vec<&str>) -> u32 {
     input
         .split(|x| x.is_empty())
         .map(|x| x.to_vec())
-        .map(|pattern| calc_reflection(pattern))
+        .map(calc_reflection)
         .sum()
 }
 
