@@ -1,65 +1,43 @@
 pub fn tilt_north(input: Vec<&str>) -> u64 {
-    let rotated = transpose(input);
+    let rotated = transpose(input.iter().map(|x| x.to_string()).collect::<Vec<String>>());
 
-    println!("{:?}", rotated);
+    let rolled = rotated
+        .iter()
+        .map(|x| roll_left(x.to_string()))
+        .collect::<Vec<String>>();
 
-    0
+    let rotated_back = transpose(rolled);
+
+    let row_numbers = (1..rotated_back.len() + 1).rev().collect::<Vec<usize>>();
+
+    row_numbers
+        .iter()
+        .zip(rotated_back.iter())
+        .map(|(line_number, line)| {
+            let os = line.chars().filter(|&x| x == 'O').count();
+            line_number * os
+        })
+        .sum::<usize>() as u64
 }
 
 fn roll_left(line: String) -> String {
-    let rocks = line
-        .chars()
-        .enumerate()
-        .filter(|(_, x)| *x == '#')
-        .map(|(i, _)| i)
-        .collect::<Vec<usize>>();
+    let split_by_rock = line.split('#').collect::<Vec<&str>>();
 
-    let dots = line
-        .chars()
-        .enumerate()
-        .filter(|(_, x)| *x == '.')
-        .map(|(i, _)| i)
-        .collect::<Vec<usize>>();
+    let move_os_left = split_by_rock
+        .iter()
+        .map(|x| {
+            let os = x.chars().filter(|&x| x == 'O').collect::<String>();
+            let dots = x.chars().filter(|&x| x == '.').collect::<String>();
 
-    line.chars().enumerate().fold(line.clone(), |acc, (i, x)| {
-        if x == '#' || x == '.' {
-            return acc;
-        }
+            os + &dots
+        })
+        .collect::<Vec<String>>()
+        .join("#");
 
-        if x == 'O' {
-            let dots_left = dots.iter().filter(|x| **x < i).collect::<Vec<&usize>>();
-            let rocks_left = rocks.iter().filter(|x| **x < i).collect::<Vec<&usize>>();
-
-            if dots_left.is_empty() {
-                return acc;
-            }
-
-            let min_dot = dots_left.iter().min().unwrap();
-
-            if rocks_left.is_empty() {
-                return swap(acc, i, **min_dot);
-            } else {
-                let min_rock = rocks_left.iter().min().unwrap();
-
-                if min_rock < min_dot {
-                    return swap(acc, i, **min_dot);
-                }
-            }
-
-            return acc;
-        }
-
-        acc
-    })
+    move_os_left
 }
 
-fn swap(input: String, i: usize, j: usize) -> String {
-    let mut chars = input.chars().collect::<Vec<char>>();
-    chars.swap(i, j);
-    chars.into_iter().collect::<String>()
-}
-
-fn transpose(input: Vec<&str>) -> Vec<String> {
+fn transpose(input: Vec<String>) -> Vec<String> {
     let mut result = vec![];
 
     for i in 0..input[0].len() {
@@ -74,21 +52,12 @@ fn transpose(input: Vec<&str>) -> Vec<String> {
 }
 
 #[test]
-fn should_swap() {
-    let input = "O.OO#....#".to_string();
-
-    let result = swap(input, 0, 1);
-
-    assert_eq!(result, ".OOO#....#".to_string());
-}
-
-#[test]
 fn should_roll_left() {
     let input = "OO.#O....O".to_string();
 
     let rolled = roll_left(input);
 
-    assert_eq!(rolled, "OO.#0O....".to_string());
+    assert_eq!(rolled, "OO.#OO....".to_string());
 }
 
 #[test]
