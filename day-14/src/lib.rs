@@ -1,4 +1,55 @@
-pub fn tilt_north(input: Vec<&str>) -> u64 {
+pub fn tilt_cycle(input: Vec<&str>, times: usize) -> u64 {
+    let input = input.iter().map(|x| x.to_string()).collect::<Vec<String>>();
+
+    let mut seen = vec![];
+    let mut final_index = 0;
+
+    let mut result = input.clone();
+
+    for i in 0..times {
+        result = cycle(result);
+        if seen.contains(&result) {
+            final_index =
+                (times - (times - i)) % (i - seen.iter().position(|x| x == &result).unwrap());
+            break;
+        }
+        seen.push(result.clone());
+    }
+
+    load(seen[final_index].clone())
+}
+
+pub fn count_north(input: Vec<&str>) -> u64 {
+    let input = input.iter().map(|x| x.to_string()).collect::<Vec<String>>();
+    let tilted_north = tilt_north(input);
+
+    load(tilted_north)
+}
+
+fn load(input: Vec<String>) -> u64 {
+    let row_numbers = (1..input.len() + 1).rev().collect::<Vec<usize>>();
+
+    row_numbers
+        .iter()
+        .zip(input.iter())
+        .map(|(line_number, line)| {
+            let os = line.chars().filter(|&x| x == 'O').count();
+            line_number * os
+        })
+        .sum::<usize>() as u64
+}
+
+fn cycle(input: Vec<String>) -> Vec<String> {
+    let mut result = input.clone();
+
+    for _ in 0..4 {
+        result = rotate_90(tilt_north(result));
+    }
+
+    result
+}
+
+fn tilt_north(input: Vec<String>) -> Vec<String> {
     let rotated = transpose(input.iter().map(|x| x.to_string()).collect::<Vec<String>>());
 
     let rolled = rotated
@@ -6,18 +57,7 @@ pub fn tilt_north(input: Vec<&str>) -> u64 {
         .map(|x| roll_left(x.to_string()))
         .collect::<Vec<String>>();
 
-    let rotated_back = transpose(rolled);
-
-    let row_numbers = (1..rotated_back.len() + 1).rev().collect::<Vec<usize>>();
-
-    row_numbers
-        .iter()
-        .zip(rotated_back.iter())
-        .map(|(line_number, line)| {
-            let os = line.chars().filter(|&x| x == 'O').count();
-            line_number * os
-        })
-        .sum::<usize>() as u64
+    return transpose(rolled);
 }
 
 fn roll_left(line: String) -> String {
@@ -35,6 +75,21 @@ fn roll_left(line: String) -> String {
         .join("#");
 
     move_os_left
+}
+
+fn rotate_90(input: Vec<String>) -> Vec<String> {
+    let mut result = vec![];
+
+    for i in 0..input[0].len() {
+        let line = input
+            .iter()
+            .map(|x| x.chars().nth(i).unwrap())
+            .rev()
+            .collect::<String>();
+        result.push(line);
+    }
+
+    result
 }
 
 fn transpose(input: Vec<String>) -> Vec<String> {
@@ -75,7 +130,7 @@ fn should_tilt_towards_north() {
         "#OO..#....",
     ];
 
-    let result = tilt_north(input);
+    let result = count_north(input);
 
     assert_eq!(result, 136);
 }
