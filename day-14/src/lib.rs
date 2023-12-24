@@ -1,22 +1,24 @@
 pub fn tilt_cycle(input: Vec<&str>, times: usize) -> u64 {
     let input = input.iter().map(|x| x.to_string()).collect::<Vec<String>>();
 
-    let mut seen = vec![];
-    let mut final_index = 0;
+    let mut seen = vec![input.clone()];
+    let mut result = input;
+    let mut iter = 0;
 
-    let mut result = input.clone();
-
-    for i in 0..times {
+    loop {
         result = cycle(result);
+        iter += 1;
+
         if seen.contains(&result) {
-            final_index =
-                (times - (times - i)) % (i - seen.iter().position(|x| x == &result).unwrap());
             break;
         }
+
         seen.push(result.clone());
     }
 
-    load(seen[final_index].clone())
+    let first = seen.iter().position(|x| x == &result).unwrap();
+
+    load(seen[(times - first) % (iter - first) + first].clone())
 }
 
 pub fn count_north(input: Vec<&str>) -> u64 {
@@ -40,7 +42,7 @@ fn load(input: Vec<String>) -> u64 {
 }
 
 fn cycle(input: Vec<String>) -> Vec<String> {
-    let mut result = input.clone();
+    let mut result = input;
 
     for _ in 0..4 {
         result = rotate_90(tilt_north(result));
@@ -57,7 +59,7 @@ fn tilt_north(input: Vec<String>) -> Vec<String> {
         .map(|x| roll_left(x.to_string()))
         .collect::<Vec<String>>();
 
-    return transpose(rolled);
+    transpose(rolled)
 }
 
 fn roll_left(line: String) -> String {
