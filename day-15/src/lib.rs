@@ -17,7 +17,7 @@ fn should_calculate_sum_of_seqence() {
 }
 
 pub fn hash_sum(input: &str) -> u64 {
-    input.split(',').map(|x| hash_from(x)).sum()
+    input.split(',').map(hash_from).sum()
 }
 
 fn hash_from(input: &str) -> u64 {
