@@ -7,4 +7,8 @@ fn main() {
     println!("Trying to solve part 1...");
     let hash_sum = day_15::hash_sum(input.as_str());
     println!("Solution is: {}", hash_sum);
+
+    println!("Trying to solve part 2...");
+    let focusing_power = day_15::focusing_power(input.as_str());
+    println!("Solution is: {}", focusing_power);
 }
