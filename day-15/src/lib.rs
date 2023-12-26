@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 pub fn hash_sum(input: &str) -> u64 {
-    input.split(',').map(hash_from).sum()
+    input.replace('\n', "").split(',').map(hash_from).sum()
 }
 
 pub fn focusing_power(input: &str) -> u64 {
@@ -12,12 +12,12 @@ pub fn focusing_power(input: &str) -> u64 {
             let box_index = hash_from(label);
 
             if acc.contains_key(&box_index) {
+                let lenses = acc.get_mut(&box_index).unwrap();
+
                 if curr.contains('-') {
-                    let lenses = acc.get_mut(&box_index).unwrap();
-                    let updated_lenses = remove_lens(lenses, label);
+                    let updated_lenses = remove_lens(lenses.to_vec(), label);
                     acc.insert(box_index, updated_lenses);
                 } else {
-                    let lenses = acc.get_mut(&box_index).unwrap();
                     let updated_lenses = update_or_insert(lenses.to_vec(), curr);
                     acc.insert(box_index, updated_lenses);
                 }
@@ -71,7 +71,7 @@ fn update_or_insert(mut lenses: Vec<String>, curr: &str) -> Vec<String> {
     }
 }
 
-fn remove_lens(lenses: &[String], label: &str) -> Vec<String> {
+fn remove_lens(lenses: Vec<String>, label: &str) -> Vec<String> {
     lenses
         .iter()
         .filter(|x| box_index(x) != label)
@@ -86,12 +86,27 @@ fn box_index(input: &str) -> &str {
 }
 
 fn hash_from(input: &str) -> u64 {
-    input.chars().fold(0, |acc, curr| {
-        if curr == '\n' {
-            return acc;
-        }
-        ((acc + curr as u64) * 17) % 256
-    })
+    input
+        .chars()
+        .fold(0, |acc, curr| ((acc + curr as u64) * 17) % 256)
+}
+
+#[test]
+fn should_calculate_hash() {
+    let input = "HASH";
+
+    let hash = hash_from(input);
+
+    assert_eq!(hash, 52);
+}
+
+#[test]
+fn should_calculate_sum_of_seqence() {
+    let input = "rn=1,cm-,qp=3,cm=2,qp-,pc=4,ot=9,ab=5,pc-,pc=6,ot=7";
+
+    let hash = hash_sum(input);
+
+    assert_eq!(hash, 1320);
 }
 
 #[test]
