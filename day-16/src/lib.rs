@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 enum Dir {
     Right,
     Left,
@@ -10,7 +10,8 @@ enum Dir {
 
 pub fn tiles(input: Vec<&str>) -> u64 {
     let mut pos: Vec<((i32, i32), Dir)> = vec![((0, 0), Dir::Right)];
-    let mut visited: Vec<((i32, i32), Dir)> = vec![((0, 0), Dir::Right)];
+    let mut visited: HashSet<((i32, i32), Dir)> = HashSet::new();
+    let mut energized: HashSet<(i32, i32)> = HashSet::new();
 
     while !pos.is_empty() {
         let ((r, c), dir) = pos.remove(0);
@@ -20,7 +21,6 @@ pub fn tiles(input: Vec<&str>) -> u64 {
             .and_then(|row| row.chars().nth(c as usize));
 
         if curr.is_none() {
-            pos.remove(0);
             break;
         }
 
@@ -31,14 +31,9 @@ pub fn tiles(input: Vec<&str>) -> u64 {
             .collect::<Vec<_>>();
 
         visited.extend(next.clone());
+        energized.extend(next.iter().map(|((r, c), _)| (*r, *c)));
 
-        pos.extend(next);
-    }
-
-    let mut energized = HashSet::new();
-
-    for ((r, c), _) in visited {
-        energized.insert((r, c));
+        pos = [next, pos].concat();
     }
 
     energized.len() as u64
