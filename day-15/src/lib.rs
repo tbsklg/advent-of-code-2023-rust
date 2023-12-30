@@ -108,21 +108,3 @@ fn should_calculate_sum_of_seqence() {
 
     assert_eq!(hash, 1320);
 }
-
-#[test]
-fn should_calculate_hash() {
-    let input = "HASH";
-
-    let hash = hash_from(input);
-
-    assert_eq!(hash, 52);
-}
-
-#[test]
-fn should_calculate_sum_of_seqence() {
-    let input = "rn=1,cm-,qp=3,cm=2,qp-,pc=4,ot=9,ab=5,pc-,pc=6,ot=7";
-
-    let hash = hash_sum(input);
-
-    assert_eq!(hash, 1320);
-}
