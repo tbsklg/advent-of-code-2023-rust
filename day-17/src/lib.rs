@@ -26,30 +26,30 @@ fn djikstra(input: &Vec<&str>) -> u32 {
     while !queue.is_empty() {
         let pos @ (coord, _, _) = queue.remove(0);
 
-        println!("{:?}", distances);
-        println!("{:?}", pos);
-        let distance = distances.get(&coord).unwrap().clone();
-
-        let current_heat = heat(&input, &coord);
-        let block_dist = distance + current_heat;
-
         if visited.contains(&coord) {
             continue;
         }
 
-        visited.push(coord.clone());
+        visited.push(coord);
 
-        if distances.contains_key(&coord) {
-            let curr_dist = distances.get(&coord).unwrap();
+        let neighbours = next_positions(&input, &pos);
 
-            if block_dist < *curr_dist {
-                distances.insert(coord, block_dist);
+        for neighbour in neighbours {
+            let heat = heat(&input, &neighbour.0);
+            let new_distance = distances.get(&coord).unwrap() + heat;
+
+            if distances.contains_key(&neighbour.0) {
+                let current_distance = distances.get(&neighbour.0).unwrap();
+
+                if new_distance < *current_distance {
+                    distances.insert(neighbour.0, new_distance);
+                }
+            } else {
+                distances.insert(neighbour.0, new_distance);
             }
-        } else {
-            distances.insert(coord, block_dist);
-        }
 
-        queue.extend(next_positions(&input, &pos));
+            queue.push(neighbour);
+        }
     }
 
     distances.get(&target).unwrap().clone()
@@ -58,13 +58,16 @@ fn djikstra(input: &Vec<&str>) -> u32 {
 fn next_positions(input: &Vec<&str>, pos: &Position) -> Vec<Position> {
     let (_, _, walk_count) = pos;
 
-    if *walk_count > 3 {
-        return change_direction(&input, &pos);
+    let directions = change_direction(&input, &pos);
+
+    if *walk_count + 1 > 3 {
+        return directions;
     } else {
         return vec![next_position(&input, pos.clone())]
             .into_iter()
             .filter(|x| x.is_some())
             .map(|x| x.unwrap())
+            .chain(directions.into_iter())
             .collect();
     }
 }
@@ -116,7 +119,7 @@ fn vertical_positions(input: &Vec<&str>, pos: &Position) -> Vec<Position> {
 }
 
 fn horizontal_positions(input: &Vec<&str>, pos: &Position) -> Vec<Position> {
-    let ((r, c), _, walk_count) = &pos;
+    let ((r, c), _, _) = &pos;
 
     let east = position(&input, ((*r, *c + 1), Dir::East, 0));
     let west = position(&input, ((*r, *c - 1), Dir::West, 0));
