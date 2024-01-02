@@ -1,6 +1,10 @@
-use std::{collections::HashMap};
+use std::{
+    cmp::Ordering,
+    collections::{BinaryHeap, HashMap},
+    iter::Map,
+};
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Ord, PartialOrd, Hash)]
 enum Dir {
     North,
     South,
@@ -9,86 +13,135 @@ enum Dir {
 }
 
 type Coordinate = (i64, i64);
-type Position = (Coordinate, Dir, u8);
+type Position = (Coordinate, Dir);
 
-pub fn heat_loss(input: Vec<&str>) -> u32 {
+pub fn heat_loss(input: Vec<&str>) -> usize {
     djikstra(&input)
 }
 
-fn djikstra(input: &Vec<&str>) -> u32 {
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+struct State {
+    cost: usize,
+    position: Position,
+    steps: u8,
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+struct StateKey {
+    position: Position,
+    steps: u8,
+}
+
+impl From<State> for StateKey {
+    fn from(value: State) -> Self {
+        Self {
+            position: value.position,
+            steps: value.steps,
+        }
+    }
+}
+
+impl Ord for State {
+    fn cmp(&self, other: &Self) -> Ordering {
+        other
+            .cost
+            .cmp(&self.cost)
+            .then_with(|| self.position.cmp(&other.position))
+    }
+}
+
+impl PartialOrd for State {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+fn djikstra(input: &Vec<&str>) -> usize {
     let target = ((input.len() - 1) as i64, (input[0].len() - 1) as i64);
 
-    let mut queue = vec![((0, 1), Dir::East, 0), ((1, 0), Dir::South, 0)];
+    let mut heap = BinaryHeap::new();
+    let east_start = State {
+        cost: 0,
+        position: ((0, 0), Dir::East),
+        steps: 0,
+    };
 
-    let mut visited = vec![(0, 0)];
-    let mut distances: HashMap<_, u32> = queue.iter().map(|x| (x.0, heat(input, &x.0))).collect();
+    let south_start = State {
+        cost: 0,
+        position: ((0, 0), Dir::South),
+        steps: 0,
+    };
 
-    while !queue.is_empty() {
-        let pos @ (coord, _, _) = queue.remove(0);
+    heap.push(east_start);
+    heap.push(south_start);
 
-        if visited.contains(&coord) {
+    let mut distances: HashMap<StateKey, usize> = HashMap::new();
+    distances.insert(east_start.into(), 0);
+    distances.insert(south_start.into(), 0);
+
+    while let Some(
+        state @ State {
+            cost,
+            position,
+            steps,
+        },
+    ) = heap.pop()
+    {
+        if position.0 == target {
+            return cost;
+        }
+
+        if distances.contains_key(&state.into()) && distances.get(&state.into()).unwrap() < &cost {
             continue;
         }
 
-        visited.push(coord);
-
-        let neighbours = next_positions(input, &pos);
+        let neighbours = next_position(&input, &position);
 
         for neighbour in neighbours {
-            let heat = heat(input, &neighbour.0);
-            let new_distance = distances.get(&coord).unwrap() + heat;
+            let heat = heat(&input, &neighbour.0);
+            let new_distance = cost + heat as usize;
 
-            if distances.contains_key(&neighbour.0) {
-                let current_distance = distances.get(&neighbour.0).unwrap();
+            let curr_dir = position.1;
+            let next_dir = neighbour.1;
 
-                if new_distance < *current_distance {
-                    distances.insert(neighbour.0, new_distance);
-                }
-            } else {
-                distances.insert(neighbour.0, new_distance);
+            let next_state = State {
+                cost: new_distance as usize,
+                position: neighbour,
+                steps: if curr_dir == next_dir {
+                    steps + 1
+                } else {
+                    steps
+                },
+            };
+
+            if next_state.steps > 3
+                || distances.contains_key(&next_state.into())
+                    && distances.get(&next_state.into()).unwrap() < &new_distance
+            {
+                continue;
             }
 
-            queue.push(neighbour);
+            distances.insert(next_state.into(), new_distance);
+            heap.push(next_state);
         }
     }
 
-    *distances.get(&target).unwrap()
+    0
 }
 
-fn next_positions(input: &Vec<&str>, pos: &Position) -> Vec<Position> {
-    let (_, _, walk_count) = pos;
+fn next_position(input: &Vec<&str>, pos: &Position) -> Vec<Position> {
+    let ((r, c), _) = pos;
 
-    let directions = change_direction(input, pos);
-
-    if *walk_count + 1 > 3 {
-        directions
-    } else {
-        vec![next_position(input, pos.clone())]
-            .into_iter()
-            .flatten()
-            .chain(directions.into_iter())
-            .collect()
-    }
-}
-
-fn next_position(input: &Vec<&str>, pos: Position) -> Option<Position> {
-    let ((r, c), dir, walk_count) = pos;
-
-    match dir {
-        Dir::North => position(input, ((r - 1, c), dir, walk_count + 1)),
-        Dir::South => position(input, ((r + 1, c), dir, walk_count + 1)),
-        Dir::East => position(input, ((r, c + 1), dir, walk_count + 1)),
-        Dir::West => position(input, ((r, c - 1), dir, walk_count + 1)),
-    }
-}
-
-fn change_direction(input: &Vec<&str>, pos: &Position) -> Vec<Position> {
-    let (_, dir, _) = &pos;
-
-    match dir {
-        Dir::North | Dir::South => horizontal_positions(input, pos),
-        Dir::East | Dir::West => vertical_positions(input, pos),
-    }
+    vec![
+        position(&input, &((r - 1, c.clone()), Dir::North)),
+        position(&input, &((r + 1, c.clone()), Dir::South)),
+        position(&input, &((r.clone(), c + 1), Dir::East)),
+        position(&input, &((r.clone(), c - 1), Dir::West)),
+    ]
+    .into_iter()
+    .filter(|x| x.is_some())
+    .map(|x| x.unwrap())
+    .collect()
 }
 
 fn heat(input: &Vec<&str>, coord: &Coordinate) -> u32 {
@@ -104,39 +157,15 @@ fn heat(input: &Vec<&str>, coord: &Coordinate) -> u32 {
     heat.to_digit(10).unwrap()
 }
 
-fn vertical_positions(input: &Vec<&str>, pos: &Position) -> Vec<Position> {
-    let ((r, c), _, _) = &pos;
-
-    let north = position(input, ((*r - 1, *c), Dir::North, 0));
-    let south = position(input, ((*r + 1, *c), Dir::South, 0));
-
-    vec![north, south]
-        .into_iter()
-        .flatten()
-        .collect()
-}
-
-fn horizontal_positions(input: &Vec<&str>, pos: &Position) -> Vec<Position> {
-    let ((r, c), _, _) = &pos;
-
-    let east = position(input, ((*r, *c + 1), Dir::East, 0));
-    let west = position(input, ((*r, *c - 1), Dir::West, 0));
-
-    vec![east, west]
-        .into_iter()
-        .flatten()
-        .collect()
-}
-
-fn position(input: &Vec<&str>, pos: Position) -> Option<Position> {
-    match in_bound(input, pos.clone()) {
-        true => Some(pos),
+fn position(input: &Vec<&str>, pos: &Position) -> Option<Position> {
+    match in_bound(input, pos) {
+        true => Some(pos.clone()),
         false => None,
     }
 }
 
-fn in_bound(input: &Vec<&str>, pos: Position) -> bool {
-    let ((r, c), _, _) = pos;
+fn in_bound(input: &Vec<&str>, pos: &Position) -> bool {
+    let ((r, c), _) = pos;
 
-    r >= 0 && r < input.len() as i64 && c >= 0 && c < input[0].len() as i64
+    *r >= 0 && *r < input.len() as i64 && *c >= 0 && *c < input[0].len() as i64
 }
