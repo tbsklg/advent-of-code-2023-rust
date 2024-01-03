@@ -1,10 +1,9 @@
 use std::{
     cmp::Ordering,
     collections::{BinaryHeap, HashMap},
-    iter::Map,
 };
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Ord, PartialOrd, Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 enum Dir {
     North,
     South,
@@ -12,12 +11,8 @@ enum Dir {
     East,
 }
 
-type Coordinate = (i64, i64);
+type Coordinate = (usize, usize);
 type Position = (Coordinate, Dir);
-
-pub fn heat_loss(input: Vec<&str>) -> usize {
-    djikstra(&input)
-}
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 struct State {
@@ -29,6 +24,7 @@ struct State {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 struct StateKey {
     position: Position,
+    dir: Dir,
     steps: u8,
 }
 
@@ -36,6 +32,7 @@ impl From<State> for StateKey {
     fn from(value: State) -> Self {
         Self {
             position: value.position,
+            dir: value.position.1,
             steps: value.steps,
         }
     }
@@ -46,7 +43,7 @@ impl Ord for State {
         other
             .cost
             .cmp(&self.cost)
-            .then_with(|| self.position.cmp(&other.position))
+            .then_with(|| self.position.0.cmp(&other.position.0))
     }
 }
 
@@ -56,8 +53,12 @@ impl PartialOrd for State {
     }
 }
 
-fn djikstra(input: &Vec<&str>) -> usize {
-    let target = ((input.len() - 1) as i64, (input[0].len() - 1) as i64);
+pub fn heat_loss(input: Vec<&str>) -> usize {
+    dijkstra(&input)
+}
+
+fn dijkstra(input: &Vec<&str>) -> usize {
+    let target = ((input.len() - 1), (input[0].len() - 1));
 
     let mut heap = BinaryHeap::new();
     let east_start = State {
@@ -91,33 +92,34 @@ fn djikstra(input: &Vec<&str>) -> usize {
             return cost;
         }
 
+        println!(
+            "Stored distance for {:?} is {:?}",
+            state,
+            distances.get(&state.into())
+        );
+
         if distances.contains_key(&state.into()) && distances.get(&state.into()).unwrap() < &cost {
             continue;
         }
 
-        let neighbours = next_position(&input, &position);
-
-        for neighbour in neighbours {
-            let heat = heat(&input, &neighbour.0);
+        for next_position in next_positions(input, &position) {
+            let heat = heat(input, &next_position.0);
             let new_distance = cost + heat as usize;
 
             let curr_dir = position.1;
-            let next_dir = neighbour.1;
+            let next_dir = next_position.1;
 
             let next_state = State {
-                cost: new_distance as usize,
-                position: neighbour,
-                steps: if curr_dir == next_dir {
-                    steps + 1
-                } else {
-                    steps
-                },
+                cost: new_distance,
+                position: next_position,
+                steps: if curr_dir == next_dir { steps + 1 } else { 1 },
             };
 
             if next_state.steps > 3
                 || distances.contains_key(&next_state.into())
-                    && distances.get(&next_state.into()).unwrap() < &new_distance
+                    && distances.get(&next_state.into()).unwrap() <= &new_distance
             {
+                println!("Skipping state: {:?}", next_state);
                 continue;
             }
 
@@ -129,43 +131,37 @@ fn djikstra(input: &Vec<&str>) -> usize {
     0
 }
 
-fn next_position(input: &Vec<&str>, pos: &Position) -> Vec<Position> {
-    let ((r, c), _) = pos;
+fn next_positions(input: &Vec<&str>, pos: &Position) -> Vec<Position> {
+    let ((r, c), dir) = pos;
 
     vec![
-        position(&input, &((r - 1, c.clone()), Dir::North)),
-        position(&input, &((r + 1, c.clone()), Dir::South)),
-        position(&input, &((r.clone(), c + 1), Dir::East)),
-        position(&input, &((r.clone(), c - 1), Dir::West)),
+        ((r.saturating_sub(1), *c), Dir::North),
+        ((r + 1, *c), Dir::South),
+        ((*r, c.saturating_sub(1)), Dir::West),
+        ((*r, c + 1), Dir::East),
     ]
     .into_iter()
-    .filter(|x| x.is_some())
-    .map(|x| x.unwrap())
+    .filter(|(x, d)| *d != opposite_dir(dir) && *x != pos.0 && in_bound(input, *x))
     .collect()
 }
 
-fn heat(input: &Vec<&str>, coord: &Coordinate) -> u32 {
-    let (r, c) = coord;
+fn opposite_dir(dir: &Dir) -> Dir {
+    match dir {
+        Dir::North => Dir::South,
+        Dir::South => Dir::North,
+        Dir::West => Dir::East,
+        Dir::East => Dir::West,
+    }
+}
 
-    let heat = input
-        .get(*r as usize)
-        .unwrap()
-        .chars()
-        .nth(*c as usize)
-        .unwrap();
+fn heat(input: &Vec<&str>, (r, c): &Coordinate) -> u32 {
+    let heat = input.get(*r).unwrap().chars().nth(*c).unwrap();
 
     heat.to_digit(10).unwrap()
 }
 
-fn position(input: &Vec<&str>, pos: &Position) -> Option<Position> {
-    match in_bound(input, pos) {
-        true => Some(pos.clone()),
-        false => None,
-    }
-}
+fn in_bound(input: &Vec<&str>, coord: Coordinate) -> bool {
+    let (r, c) = coord;
 
-fn in_bound(input: &Vec<&str>, pos: &Position) -> bool {
-    let ((r, c), _) = pos;
-
-    *r >= 0 && *r < input.len() as i64 && *c >= 0 && *c < input[0].len() as i64
+    r < input.len() && c < input[0].len()
 }
