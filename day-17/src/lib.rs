@@ -92,12 +92,6 @@ fn dijkstra(input: &Vec<&str>) -> usize {
             return cost;
         }
 
-        println!(
-            "Stored distance for {:?} is {:?}",
-            state,
-            distances.get(&state.into())
-        );
-
         if distances.contains_key(&state.into()) && distances.get(&state.into()).unwrap() < &cost {
             continue;
         }
@@ -119,7 +113,6 @@ fn dijkstra(input: &Vec<&str>) -> usize {
                 || distances.contains_key(&next_state.into())
                     && distances.get(&next_state.into()).unwrap() <= &new_distance
             {
-                println!("Skipping state: {:?}", next_state);
                 continue;
             }
 
