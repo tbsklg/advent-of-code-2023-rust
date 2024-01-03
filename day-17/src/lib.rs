@@ -53,14 +53,17 @@ impl PartialOrd for State {
     }
 }
 
-pub fn heat_loss(input: Vec<&str>) -> usize {
-    dijkstra(&input)
+pub fn heat_loss_ultra(input: Vec<&str>) -> usize {
+    dijkstra(&input, 4, 10)
 }
 
-fn dijkstra(input: &Vec<&str>) -> usize {
+pub fn heat_loss(input: Vec<&str>) -> usize {
+    dijkstra(&input, 1, 3)
+}
+
+fn dijkstra(input: &Vec<&str>, min_steps: u8, max_steps: u8) -> usize {
     let target = ((input.len() - 1), (input[0].len() - 1));
 
-    let mut heap = BinaryHeap::new();
     let east_start = State {
         cost: 0,
         position: ((0, 0), Dir::East),
@@ -73,8 +76,9 @@ fn dijkstra(input: &Vec<&str>) -> usize {
         steps: 0,
     };
 
-    heap.push(east_start);
-    heap.push(south_start);
+    let mut priority_queue = BinaryHeap::new();
+    priority_queue.push(east_start);
+    priority_queue.push(south_start);
 
     let mut distances: HashMap<StateKey, usize> = HashMap::new();
     distances.insert(east_start.into(), 0);
@@ -86,9 +90,9 @@ fn dijkstra(input: &Vec<&str>) -> usize {
             position,
             steps,
         },
-    ) = heap.pop()
+    ) = priority_queue.pop()
     {
-        if position.0 == target {
+        if position.0 == target && steps >= min_steps {
             return cost;
         }
 
@@ -98,26 +102,30 @@ fn dijkstra(input: &Vec<&str>) -> usize {
 
         for next_position in next_positions(input, &position) {
             let heat = heat(input, &next_position.0);
-            let new_distance = cost + heat as usize;
+            let new_heat = cost + heat as usize;
 
             let curr_dir = position.1;
             let next_dir = next_position.1;
 
             let next_state = State {
-                cost: new_distance,
+                cost: new_heat,
                 position: next_position,
                 steps: if curr_dir == next_dir { steps + 1 } else { 1 },
             };
 
-            if next_state.steps > 3
+            if next_state.steps > max_steps
                 || distances.contains_key(&next_state.into())
-                    && distances.get(&next_state.into()).unwrap() <= &new_distance
+                    && distances.get(&next_state.into()).unwrap() <= &new_heat
             {
                 continue;
             }
 
-            distances.insert(next_state.into(), new_distance);
-            heap.push(next_state);
+            if curr_dir != next_dir && steps < min_steps {
+                continue;
+            }
+
+            distances.insert(next_state.into(), new_heat);
+            priority_queue.push(next_state);
         }
     }
 
