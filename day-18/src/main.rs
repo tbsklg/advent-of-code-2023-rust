@@ -10,4 +10,11 @@ fn main() {
     let elapsed = start.elapsed();
     println!("Solution is: {}", tiles);
     println!("Elapsed time: {:?}", elapsed);
+
+    println!("Trying to solve part 2...");
+    let start = std::time::Instant::now();
+    let tiles = day_18::cubic_meters_rgb(input.lines().collect());
+    let elapsed = start.elapsed();
+    println!("Solution is: {}", tiles);
+    println!("Elapsed time: {:?}", elapsed);
 }
