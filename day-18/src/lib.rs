@@ -32,7 +32,6 @@ impl Dir {
 struct Dig {
     dir: Dir,
     steps: i64,
-    rgb: String,
 }
 
 impl Dig {
@@ -42,18 +41,16 @@ impl Dig {
         Self {
             dir: Dir::from(slice.next().unwrap()),
             steps: slice.next().unwrap().parse::<i64>().unwrap(),
-            rgb: slice.next().unwrap().to_string(),
         }
     }
 
     fn from_rgb(value: &str) -> Self {
         let mut slice = value.split(' ');
-        let rgb = slice.nth(2).unwrap().replace('(', "").replace(')', "");
+        let rgb = slice.nth(2).unwrap().replace(['(', ')'], "");
 
         Self {
             dir: Dir::from_rgb(rgb.chars().last().unwrap()),
             steps: to_base_10(&rgb[1..rgb.len() - 1]),
-            rgb: rgb.to_string(),
         }
     }
 }
