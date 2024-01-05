@@ -15,7 +15,7 @@ impl Rule {
 
         if input.contains('<') {
             return Self::LT(
-                slice.next().unwrap().chars().nth(0).unwrap(),
+                slice.next().unwrap().chars().next().unwrap(),
                 slice.next().unwrap().parse::<usize>().unwrap(),
                 Box::new(Rule::from(slice.next().unwrap())),
             );
@@ -23,7 +23,7 @@ impl Rule {
 
         if input.contains('>') {
             return Self::GT(
-                slice.next().unwrap().chars().nth(0).unwrap(),
+                slice.next().unwrap().chars().next().unwrap(),
                 slice.next().unwrap().parse::<usize>().unwrap(),
                 Box::new(Rule::from(slice.next().unwrap())),
             );
@@ -104,13 +104,12 @@ fn parse_ratings(input: Vec<&str>) -> Vec<Vec<(char, usize)>> {
 
 fn parse_rating(input: &str) -> Vec<(char, usize)> {
     input
-        .replace("{", "")
-        .replace("}", "")
+        .replace(['{', '}'], "")
         .split(',')
         .map(|x| {
             let mut slice = x.split('=');
             (
-                slice.next().unwrap().chars().nth(0).unwrap(),
+                slice.next().unwrap().chars().next().unwrap(),
                 slice.next().unwrap().parse::<usize>().unwrap(),
             )
         })
@@ -125,9 +124,9 @@ fn parse_workflows(input: Vec<&str>) -> HashMap<&str, Vec<Rule>> {
         let rules = slices
             .next()
             .unwrap()
-            .replace("}", "")
+            .replace('}', "")
             .split(',')
-            .map(|x| Rule::from(x))
+            .map(Rule::from)
             .collect();
 
         acc.insert(name, rules);
