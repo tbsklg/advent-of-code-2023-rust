@@ -70,7 +70,6 @@ fn calc_rating(
     workflows: &HashMap<&str, Vec<Rule>>,
     step: &str,
 ) -> Rule {
-    println!("Step: {}", step);
     let rules = workflows.get(step).unwrap();
 
     let mut curr_rule = Rule::Rejected;
