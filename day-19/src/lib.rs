@@ -58,11 +58,16 @@ fn calc_parts(ratings: &Vec<Vec<(char, usize)>>, workflows: &HashMap<&str, Vec<R
 }
 
 fn calc_part(rating: &Vec<(char, usize)>, workflows: &HashMap<&str, Vec<Rule>>) -> Rule {
-    match calc_rating(rating, workflows, "in") {
-        Rule::Next(s) => calc_rating(rating, workflows, &s),
-        Rule::Accepted => Rule::Accepted,
-        _ => Rule::Rejected,
+    let mut start = calc_rating(rating, workflows, "in");
+
+    while start != Rule::Accepted && start != Rule::Rejected {
+        match start {
+            Rule::Next(s) => start = calc_rating(rating, workflows, &s),
+            _ => break,
+        }
     }
+
+    start
 }
 
 fn calc_rating(
@@ -88,9 +93,10 @@ fn calc_rating(
                     break;
                 }
             }
-            Rule::Next(s) => curr_rule = calc_rating(rating, workflows, s),
-            Rule::Accepted => curr_rule = Rule::Accepted,
-            Rule::Rejected => curr_rule = Rule::Rejected,
+            r => {
+                curr_rule = r.clone();
+                break;
+            }
         };
     }
 
