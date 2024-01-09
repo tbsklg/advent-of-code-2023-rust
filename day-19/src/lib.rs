@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+use std::{
+    cmp::{max, min},
+    collections::HashMap,
+};
 
 #[derive(Debug, PartialEq, Clone)]
 enum Rule {
@@ -47,6 +50,81 @@ pub fn rating(input: Vec<&str>) -> usize {
     let ratings = parse_ratings(slice.next().unwrap().to_vec());
 
     calc_parts(&ratings, &workflows)
+}
+
+pub fn combinations(input: Vec<&str>) -> usize {
+    let mut slice = input.split(|x| x == &"");
+    let workflows = parse_workflows(slice.next().unwrap().to_vec());
+
+    calc_combinations(&workflows)
+}
+
+fn calc_combinations(workflows: &HashMap<&str, Vec<Rule>>) -> usize {
+    let ranges: &mut HashMap<char, (usize, usize)> = &mut HashMap::from([
+        ('x', (1, 4000)),
+        ('m', (1, 4000)),
+        ('a', (1, 4000)),
+        ('s', (1, 4000)),
+    ]);
+
+    calc_combination("in", ranges, workflows)
+}
+
+fn calc_combination(
+    part: &str,
+    ranges: &mut HashMap<char, (usize, usize)>,
+    workflows: &HashMap<&str, Vec<Rule>>,
+) -> usize {
+    let rules = workflows.get(part).unwrap();
+
+    let mut curr = 0;
+    for rule in rules {
+        match rule {
+            Rule::LT(c, i, r) => {
+                let (l, h) = ranges.get(&c).unwrap();
+                ranges.insert(*c, (*l, min(*i, *h)));
+
+                match *r.clone() {
+                    Rule::Next(s) => curr += calc_combination(&s, ranges, workflows),
+                    Rule::Accepted => curr += calc_result(&ranges),
+                    _ => curr += 0,
+                }
+            }
+            Rule::GT(c, i, r) => {
+                let (l, h) = ranges.get(&c).unwrap();
+                ranges.insert(*c, (max(*l, *i), *h));
+
+                match *r.clone() {
+                    Rule::Next(s) => curr += calc_combination(&s, ranges, workflows),
+                    Rule::Accepted => curr += calc_result(&ranges),
+                    _ => curr += 0,
+                }
+            }
+            Rule::Next(s) => {
+                curr += calc_combination(&s, ranges, workflows);
+            }
+            Rule::Accepted => {
+                curr += calc_result(&ranges);
+                break;
+            }
+            Rule::Rejected => break,
+        }
+    }
+
+    curr
+}
+
+//todo: refactor to use fold
+fn calc_result(ranges: &HashMap<char, (usize, usize)>) -> usize {
+    let mut result = 1;
+
+    for (_, (l, h)) in ranges {
+        if h > l {
+            result *= h - l + 1;
+        }
+    }
+
+    result
 }
 
 fn calc_parts(ratings: &Vec<Vec<(char, usize)>>, workflows: &HashMap<&str, Vec<Rule>>) -> usize {
