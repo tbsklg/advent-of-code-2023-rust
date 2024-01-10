@@ -81,50 +81,57 @@ fn calc_combination(
     for rule in rules {
         match rule {
             Rule::LT(c, i, r) => {
-                let (l, h) = ranges.get(&c).unwrap();
-                ranges.insert(*c, (*l, min(*i, *h)));
+                let (l, h) = ranges.get(&c).unwrap().clone();
+                ranges.insert(*c, (l, min(*i - 1, h)));
 
+                let next = &mut ranges.clone();
                 match *r.clone() {
-                    Rule::Next(s) => curr += calc_combination(&s, ranges, workflows),
-                    Rule::Accepted => curr += calc_result(&ranges),
+                    Rule::Next(s) => curr += calc_combination(&s, next, workflows),
+
+                    Rule::Accepted => {
+                        curr += calc_result(next);
+                    }
                     _ => curr += 0,
                 }
+
+                ranges.insert(*c, (max(*i, l), h));
             }
             Rule::GT(c, i, r) => {
-                let (l, h) = ranges.get(&c).unwrap();
-                ranges.insert(*c, (max(*l, *i), *h));
+                let (l, h) = ranges.get(&c).unwrap().clone();
+                ranges.insert(*c, (max(*i + 1, l), h));
 
+                let next = &mut ranges.clone();
                 match *r.clone() {
-                    Rule::Next(s) => curr += calc_combination(&s, ranges, workflows),
-                    Rule::Accepted => curr += calc_result(&ranges),
+                    Rule::Next(s) => curr += calc_combination(&s, next, workflows),
+
+                    Rule::Accepted => {
+                        curr += calc_result(next);
+                    }
                     _ => curr += 0,
                 }
+
+                ranges.insert(*c, (l, min(*i, h)));
             }
             Rule::Next(s) => {
                 curr += calc_combination(&s, ranges, workflows);
             }
             Rule::Accepted => {
-                curr += calc_result(&ranges);
-                break;
+                curr += calc_result(ranges);
             }
-            Rule::Rejected => break,
+            Rule::Rejected => {
+                curr += 0;
+            }
         }
     }
-
     curr
 }
 
-//todo: refactor to use fold
 fn calc_result(ranges: &HashMap<char, (usize, usize)>) -> usize {
-    let mut result = 1;
-
-    for (_, (l, h)) in ranges {
-        if h > l {
-            result *= h - l + 1;
-        }
+    if ranges.iter().all(|(_, (l, h))| h >= l) {
+        return ranges.iter().fold(1, |acc, (_, (l, h))| acc * (h - l + 1));
     }
 
-    result
+    0
 }
 
 fn calc_parts(ratings: &Vec<Vec<(char, usize)>>, workflows: &HashMap<&str, Vec<Rule>>) -> usize {
