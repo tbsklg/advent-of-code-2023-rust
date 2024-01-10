@@ -81,7 +81,7 @@ fn calc_combination(
     for rule in rules {
         match rule {
             Rule::LT(c, i, r) => {
-                let (l, h) = ranges.get(&c).unwrap().clone();
+                let (l, h) = *ranges.get(c).unwrap();
                 ranges.insert(*c, (l, min(*i - 1, h)));
 
                 let next = &mut ranges.clone();
@@ -97,7 +97,7 @@ fn calc_combination(
                 ranges.insert(*c, (max(*i, l), h));
             }
             Rule::GT(c, i, r) => {
-                let (l, h) = ranges.get(&c).unwrap().clone();
+                let (l, h) = *ranges.get(c).unwrap();
                 ranges.insert(*c, (max(*i + 1, l), h));
 
                 let next = &mut ranges.clone();
@@ -113,7 +113,7 @@ fn calc_combination(
                 ranges.insert(*c, (l, min(*i, h)));
             }
             Rule::Next(s) => {
-                curr += calc_combination(&s, ranges, workflows);
+                curr += calc_combination(s, ranges, workflows);
             }
             Rule::Accepted => {
                 curr += calc_result(ranges);
