@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, VecDeque},
-    default,
-};
+use std::collections::{HashMap, VecDeque};
 
 type Name = String;
 type Destinations = Vec<String>;
@@ -27,7 +24,6 @@ impl Pulse {
 
 trait Module {
     fn tick(&mut self, pulse: Pulse, next: Name) -> Pulse;
-    fn current_pulse(&self) -> Pulse;
     fn memory(&mut self, _: Name) {}
     fn next(&self, _: Pulse) -> bool {
         true
@@ -47,16 +43,8 @@ impl Module for FlipFlop {
         self.state.clone()
     }
 
-    fn current_pulse(&self) -> Pulse {
-        self.state.clone()
-    }
-
     fn next(&self, pulse: Pulse) -> bool {
-        if pulse == Pulse::High {
-            return true;
-        }
-
-        return false;
+        pulse != Pulse::High
     }
 }
 
@@ -70,9 +58,6 @@ impl Module for Broadcaster {
         self.state = signal;
         self.state.clone()
     }
-    fn current_pulse(&self) -> Pulse {
-        self.state.clone()
-    }
 }
 
 #[derive(Default, Clone, Debug)]
@@ -83,23 +68,26 @@ struct Conjunction {
 
 impl Module for Conjunction {
     fn tick(&mut self, signal: Pulse, name: String) -> Pulse {
-        println!("{}: {:?}", name, signal);
         self.inputs.insert(name, signal);
 
         self.state = match self.inputs.values().all(|x| x == &Pulse::High) {
-            true => Pulse::High,
-            false => Pulse::Low,
+            true => Pulse::Low,
+            false => Pulse::High,
         };
 
         self.state.clone()
     }
 
-    fn current_pulse(&self) -> Pulse {
-        self.state.clone()
-    }
-
     fn memory(&mut self, name: Name) {
         self.inputs.insert(name, Pulse::Low);
+    }
+}
+
+fn build_conjunctions(network: &mut Network, next: &Next) {
+    for (name, destinations) in next.iter() {
+        for destination in destinations {
+            network.get_mut(destination).map(|x| x.memory(name.clone()));
+        }
     }
 }
 
@@ -109,15 +97,10 @@ pub fn pulses(vec: Vec<&str>) -> usize {
     let mut low = 0;
     let mut high = 0;
 
-    for (name, destinations) in next.iter() {
-        for destination in destinations {
-            network.get_mut(destination).map(|x| x.memory(name.clone()));
-        }
-    }
+    build_conjunctions(&mut network, &next);
 
-    for _ in 0..1 {
+    for _ in 0..1000 {
         let mut queue = VecDeque::new();
-        // pushing the butten produces one low pulse
         low += 1;
 
         queue.push_back(("broadcaster".to_string(), Pulse::Low));
@@ -128,12 +111,11 @@ pub fn pulses(vec: Vec<&str>) -> usize {
                     Pulse::High => high += 1,
                 }
 
-                if n == "rx" {
+                if n == "rx" || n == "output" {
                     continue;
                 }
 
                 let module = network.get_mut(n).unwrap();
-                // only FlipFlop implements this
                 if !module.next(pulse.clone()) {
                     continue;
                 }
@@ -143,7 +125,6 @@ pub fn pulses(vec: Vec<&str>) -> usize {
             }
         }
     }
-    println!("low: {}, high: {}", low, high);
 
     low * high
 }
