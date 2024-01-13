@@ -86,7 +86,7 @@ impl Module for Conjunction {
 fn build_conjunctions(network: &mut Network, next: &Next) {
     for (name, destinations) in next.iter() {
         for destination in destinations {
-            network.get_mut(destination).map(|x| x.memory(name.clone()));
+            if let Some(x) = network.get_mut(destination) { x.memory(name.clone()) }
         }
     }
 }
@@ -165,10 +165,10 @@ fn parse_destinations(x: &str) -> (Name, Vec<String>) {
 
 fn parse_module_type(x: &str) -> (Name, Box<dyn Module>) {
     match x {
-        "broadcaster" => (x.to_string(), Box::new(Broadcaster::default())),
-        x => match x.chars().nth(0).unwrap() {
-            '%' => (x.replace("%", ""), Box::new(FlipFlop::default())),
-            '&' => (x.replace("&", ""), Box::new(Conjunction::default())),
+        "broadcaster" => (x.to_string(), Box::<Broadcaster>::default()),
+        x => match x.chars().next().unwrap() {
+            '%' => (x.replace('%', ""), Box::<FlipFlop>::default()),
+            '&' => (x.replace('&', ""), Box::<Conjunction>::default()),
             _ => panic!("Cannot parse module type!"),
         },
     }
