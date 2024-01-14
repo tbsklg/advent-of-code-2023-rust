@@ -1,4 +1,9 @@
-use std::collections::{HashMap, VecDeque};
+use std::{
+    collections::{HashMap, VecDeque},
+    process::exit,
+};
+
+use num_integer::lcm;
 
 type Name = String;
 type Destinations = Vec<String>;
@@ -86,7 +91,69 @@ impl Module for Conjunction {
 fn build_conjunctions(network: &mut Network, next: &Next) {
     for (name, destinations) in next.iter() {
         for destination in destinations {
-            if let Some(x) = network.get_mut(destination) { x.memory(name.clone()) }
+            if let Some(x) = network.get_mut(destination) {
+                x.memory(name.clone())
+            }
+        }
+    }
+}
+
+fn value_as_output(input: String, next: &Next) -> Vec<String> {
+    next.iter()
+        .filter(|(_, v)| v.contains(&input))
+        .map(|(k, _)| k.clone())
+        .collect()
+}
+
+pub fn reach_rx_low(vec: Vec<&str>) -> usize {
+    let (mut network, next) = parse(vec);
+
+    let feed = value_as_output("rx".to_string(), &next)[0].clone();
+    let cycles = value_as_output(feed.to_string(), &next);
+
+    let mut cycle_length: HashMap<String, usize> = HashMap::new();
+    let mut seen = cycles
+        .iter()
+        .map(|v| (v.to_string(), 0))
+        .collect::<HashMap<String, usize>>();
+
+    build_conjunctions(&mut network, &next);
+
+    let mut presses = 0;
+    loop {
+        presses += 1;
+        let mut queue = VecDeque::new();
+
+        queue.push_back(("broadcaster".to_string(), Pulse::Low));
+        while let Some((name, pulse)) = queue.pop_front() {
+            for n in next.get(&name).unwrap() {
+                if n == "mg" && pulse == Pulse::High {
+                    let next_seen = seen.get_mut(&name).unwrap().saturating_add(1);
+                    seen.insert(name.clone(), next_seen);
+
+                    if cycle_length.contains_key(&name) {
+                        cycle_length.insert(name.clone(), presses);
+                    } else {
+                        cycle_length.insert(name.clone(), presses);
+                    }
+
+                    if seen.iter().all(|(_, v)| v == &1) {
+                        return cycle_length.iter().fold(1, |acc, (_, v)| lcm(acc, *v));
+                    }
+                }
+
+                if n == "rx" || n == "output" {
+                    continue;
+                }
+
+                let module = network.get_mut(n).unwrap();
+                if !module.next(pulse.clone()) {
+                    continue;
+                }
+
+                let pulse = module.tick(pulse.clone(), name.clone());
+                queue.push_back((n.clone(), pulse));
+            }
         }
     }
 }
@@ -99,7 +166,7 @@ pub fn pulses(vec: Vec<&str>) -> usize {
 
     build_conjunctions(&mut network, &next);
 
-    for _ in 0..1000 {
+    for _ in 0..1_000 {
         let mut queue = VecDeque::new();
         low += 1;
 
