@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, VecDeque},
-    process::exit,
-};
+use std::collections::{HashMap, VecDeque};
 
 use num_integer::lcm;
 
@@ -127,7 +124,7 @@ pub fn reach_rx_low(vec: Vec<&str>) -> usize {
         queue.push_back(("broadcaster".to_string(), Pulse::Low));
         while let Some((name, pulse)) = queue.pop_front() {
             for n in next.get(&name).unwrap() {
-                if n == "mg" && pulse == Pulse::High {
+                if *n == feed && pulse == Pulse::High {
                     let next_seen = seen.get_mut(&name).unwrap().saturating_add(1);
                     seen.insert(name.clone(), next_seen);
 
