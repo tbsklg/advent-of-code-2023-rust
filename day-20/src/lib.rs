@@ -102,6 +102,8 @@ fn value_as_output(input: String, next: &Next) -> Vec<String> {
         .collect()
 }
 
+// Solved part two with the help of:
+// https://www.youtube.com/watch?v=lxm6i21O83k
 pub fn reach_rx_low(vec: Vec<&str>) -> usize {
     let (mut network, next) = parse(vec);
 
