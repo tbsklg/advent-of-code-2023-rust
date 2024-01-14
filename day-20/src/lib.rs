@@ -128,11 +128,7 @@ pub fn reach_rx_low(vec: Vec<&str>) -> usize {
                     let next_seen = seen.get_mut(&name).unwrap().saturating_add(1);
                     seen.insert(name.clone(), next_seen);
 
-                    if cycle_length.contains_key(&name) {
-                        cycle_length.insert(name.clone(), presses);
-                    } else {
-                        cycle_length.insert(name.clone(), presses);
-                    }
+                    cycle_length.insert(name.clone(), presses);
 
                     if seen.iter().all(|(_, v)| v == &1) {
                         return cycle_length.iter().fold(1, |acc, (_, v)| lcm(acc, *v));
