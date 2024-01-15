@@ -7,7 +7,7 @@ pub fn plots(collect: Vec<&str>, steps: usize) -> usize {
         curr_pos = next_poss(collect.clone(), curr_pos)
             .iter()
             .filter(|(r, c)| collect[*r].chars().nth(*c).unwrap() == '.')
-            .map(|p| *p)
+            .copied()
             .collect();
     }
 
@@ -43,7 +43,7 @@ fn next_pos(garden: Vec<&str>, (r, c): Pos) -> Vec<Pos> {
     ]
     .iter()
     .filter(|p| in_garden(&garden, **p))
-    .map(|p| *p)
+    .copied()
     .collect()
 }
 
