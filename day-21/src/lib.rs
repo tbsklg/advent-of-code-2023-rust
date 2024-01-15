@@ -11,8 +11,7 @@ pub fn plots(collect: Vec<&str>, steps: usize) -> usize {
             .collect();
     }
 
-    let unique_pos = curr_pos.iter().collect::<HashSet<_>>();
-    unique_pos.len() + 1
+    curr_pos.len() + 1
 }
 
 type Pos = (usize, usize);
@@ -44,6 +43,8 @@ fn next_pos(garden: Vec<&str>, (r, c): Pos) -> Vec<Pos> {
     .iter()
     .filter(|p| in_garden(&garden, **p))
     .copied()
+ 
+    
     .collect()
 }
 
