@@ -1,68 +1,58 @@
-use std::collections::VecDeque;
-
 pub fn bricks(collect: Vec<&str>) -> usize {
     let bricks = parse(collect);
+    let fallen_bricks = fall(&bricks);
 
-    disintegrate(&bricks)
+    disintegrate(&fallen_bricks)
+}
+
+fn fall(bricks: &Vec<Brick>) -> Vec<Brick> {
+    let mut fallen_bricks = vec![];
+
+    for brick in bricks {
+        if fallen_bricks.is_empty() {
+            fallen_bricks.push(brick.clone());
+            continue;
+        }
+    }
+
+    fallen_bricks
 }
 
 fn disintegrate(bricks: &Vec<Brick>) -> usize {
     let mut disintegrated = vec![];
 
     for brick in bricks {
-        let connected = connected_up(&brick, &bricks);
-
-        if connected.len() == 0 {
+        let no_brick_above = bricks.iter().all(|x| !x.lays_above(&brick));
+        if no_brick_above {
             disintegrated.push(brick);
+            continue;
         }
 
-        assert!(connected.len() == 1);
+        let bricks_above = bricks
+            .iter()
+            .filter(|x| x.lays_above(&brick))
+            .collect::<Vec<&Brick>>();
 
-        let connected = connected_down(&brick, &bricks);
+        let all_above_connected = bricks_above.iter().all(|x| {
+            let bricks_below = bricks
+                .iter()
+                .filter(|y| y.lays_below(&x))
+                .collect::<Vec<&Brick>>();
 
-        if connected.len() > 1 {
+            bricks_below.len() >= 2
+        });
+
+        if all_above_connected {
             disintegrated.push(brick);
         }
     }
 
-    println!("Disintegrated: {:?}", disintegrated);
-
     disintegrated.len()
-}
-
-fn connected_down(brick: &Brick, bricks: &Vec<Brick>) -> Vec<&Brick> {
-    let connected = bricks
-        .iter()
-        .filter(|b| {
-            lays_down(&b.z, &brick.z) && (overlap(&b.x, &brick.x) || overlap(&b.y, &brick.y))
-        })
-        .collect::<Vec<&Brick>>();
-}
-
-fn connected_up(brick: &Brick, bricks: &Vec<Brick>) -> Vec<&Brick> {
-    let connected = bricks
-        .iter()
-        .filter(|b| {
-            lays_above(&b.z, &brick.z) && (overlap(&b.x, &brick.x) || overlap(&b.y, &brick.y))
-        })
-        .collect::<Vec<&Brick>>();
-}
-
-fn lays_down(z_1: &(usize, usize), z_2: &(usize, usize)) -> bool {
-    z_1.0 + 1 == z_2.1
-}
-
-fn lays_above(z_1: &(usize, usize), z_2: &(usize, usize)) -> bool {
-    z_1.1 + 1 == z_2.0
-}
-
-fn overlap((x1, y1): &(usize, usize), (x2, y2): &(usize, usize)) -> bool {
-    x1 <= y2 && y1 <= x2
 }
 
 type Range = (usize, usize);
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 struct Brick {
     x: Range,
     y: Range,
@@ -82,6 +72,19 @@ impl Brick {
             y: ranges.next().unwrap(),
             z: ranges.next().unwrap(),
         }
+    }
+
+    fn lays_above(&self, other: &Self) -> bool {
+        self.z.0 == other.z.1 + 1 && self.overlaps(&other)
+    }
+
+    fn lays_below(&self, other: &Self) -> bool {
+        self.z.1 + 1 == other.z.0 && self.overlaps(&other)
+    }
+
+    fn overlaps(&self, other: &Self) -> bool {
+        (self.x.0 <= other.x.1 && other.x.0 <= self.x.1)
+            || (self.y.0 <= other.y.1 && other.y.0 <= self.y.1)
     }
 }
 
