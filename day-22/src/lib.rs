@@ -1,6 +1,11 @@
+use std::cmp::{max, min};
+
 pub fn bricks(collect: Vec<&str>) -> usize {
-    let bricks = parse(collect);
-    let fallen_bricks = fall(&bricks);
+    let mut bricks = parse(collect);
+    bricks.sort_by_key(|x| x.z.0);
+
+    let mut fallen_bricks = fall(&bricks);
+    fallen_bricks.sort_by_key(|x| x.z.0);
 
     disintegrate(&fallen_bricks)
 }
@@ -8,11 +13,19 @@ pub fn bricks(collect: Vec<&str>) -> usize {
 fn fall(bricks: &Vec<Brick>) -> Vec<Brick> {
     let mut fallen_bricks = vec![];
 
-    for brick in bricks {
-        if fallen_bricks.is_empty() {
-            fallen_bricks.push(brick.clone());
-            continue;
+    for (i, brick) in bricks.iter().enumerate() {
+        let mut max_z = 1;
+        for fallen in &bricks[0..i] {
+            if brick.overlaps(&fallen) {
+                max_z = std::cmp::max(max_z, fallen.z.1 + 1);
+            }
         }
+
+        fallen_bricks.push(Brick {
+            x: brick.x,
+            y: brick.y,
+            z: (max_z, brick.z.1 - (brick.z.0 - max_z)),
+        });
     }
 
     fallen_bricks
@@ -21,7 +34,7 @@ fn fall(bricks: &Vec<Brick>) -> Vec<Brick> {
 fn disintegrate(bricks: &Vec<Brick>) -> usize {
     let mut disintegrated = vec![];
 
-    for brick in bricks {
+    for (i, brick) in bricks.iter().enumerate() {
         let no_brick_above = bricks.iter().all(|x| !x.lays_above(&brick));
         if no_brick_above {
             disintegrated.push(brick);
@@ -83,8 +96,8 @@ impl Brick {
     }
 
     fn overlaps(&self, other: &Self) -> bool {
-        (self.x.0 <= other.x.1 && other.x.0 <= self.x.1)
-            || (self.y.0 <= other.y.1 && other.y.0 <= self.y.1)
+        max(self.x.0, other.x.0) <= min(self.x.1, other.x.1)
+            && max(self.y.0, other.y.0) <= min(self.y.1, other.y.1)
     }
 }
 
