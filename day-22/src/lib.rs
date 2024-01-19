@@ -1,4 +1,7 @@
-use std::cmp::{max, min};
+use std::{
+    cmp::{max, min},
+    collections::HashSet,
+};
 
 pub fn bricks(collect: Vec<&str>) -> usize {
     let mut bricks = parse(collect);
@@ -7,6 +10,7 @@ pub fn bricks(collect: Vec<&str>) -> usize {
     let mut fallen_bricks = fall(&bricks);
     fallen_bricks.sort_by_key(|x| x.z.0);
 
+    println!("Fallen bricks: {:?}", fallen_bricks);
     disintegrate(&fallen_bricks)
 }
 
@@ -15,7 +19,7 @@ fn fall(bricks: &Vec<Brick>) -> Vec<Brick> {
 
     for (i, brick) in bricks.iter().enumerate() {
         let mut max_z = 1;
-        for fallen in &bricks[0..i] {
+        for fallen in &fallen_bricks[..i] {
             if brick.overlaps(&fallen) {
                 max_z = std::cmp::max(max_z, fallen.z.1 + 1);
             }
@@ -32,31 +36,24 @@ fn fall(bricks: &Vec<Brick>) -> Vec<Brick> {
 }
 
 fn disintegrate(bricks: &Vec<Brick>) -> usize {
-    let mut disintegrated = vec![];
+    let mut disintegrated = HashSet::new();
 
+    println!("Bricks: {:?}", bricks.len());
     for (i, brick) in bricks.iter().enumerate() {
-        let no_brick_above = bricks.iter().all(|x| !x.lays_above(&brick));
-        if no_brick_above {
-            disintegrated.push(brick);
-            continue;
-        }
+        let further_bricks = &bricks[i + 1..];
 
-        let bricks_above = bricks
+        let bricks_above = further_bricks
             .iter()
             .filter(|x| x.lays_above(&brick))
             .collect::<Vec<&Brick>>();
 
         let all_above_connected = bricks_above.iter().all(|x| {
-            let bricks_below = bricks
-                .iter()
-                .filter(|y| y.lays_below(&x))
-                .collect::<Vec<&Brick>>();
-
-            bricks_below.len() >= 2
+            let bricks_below = &bricks.iter().filter(|y| y.lays_below(&x)).count();
+            bricks_below >= &2
         });
 
         if all_above_connected {
-            disintegrated.push(brick);
+            disintegrated.insert(brick.clone());
         }
     }
 
@@ -65,7 +62,7 @@ fn disintegrate(bricks: &Vec<Brick>) -> usize {
 
 type Range = (usize, usize);
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 struct Brick {
     x: Range,
     y: Range,
@@ -92,7 +89,7 @@ impl Brick {
     }
 
     fn lays_below(&self, other: &Self) -> bool {
-        self.z.1 + 1 == other.z.0 && self.overlaps(&other)
+        self.z.1 == other.z.0 - 1 && self.overlaps(&other)
     }
 
     fn overlaps(&self, other: &Self) -> bool {
@@ -110,4 +107,21 @@ fn parse_pos(input: &str) -> Vec<usize> {
 
 fn parse(input: Vec<&str>) -> Vec<Brick> {
     input.iter().map(|x| Brick::from(*x)).collect()
+}
+
+#[test]
+fn should_calculate_bricks_to_be_disintegrated() {
+    let input = vec![
+        "1,0,1~1,2,1",
+        "0,0,2~2,0,2",
+        "0,2,3~2,2,3",
+        "0,0,4~0,2,4",
+        "2,0,5~2,2,5",
+        "0,1,6~2,1,6",
+        "1,1,8~1,1,9",
+    ];
+
+    let bricks = bricks(input);
+
+    assert_eq!(bricks, 5);
 }
