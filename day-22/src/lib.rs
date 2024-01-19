@@ -20,7 +20,7 @@ fn fall(bricks: &Vec<Brick>) -> Vec<Brick> {
     for (i, brick) in bricks.iter().enumerate() {
         let mut max_z = 1;
         for fallen in &fallen_bricks[..i] {
-            if brick.overlaps(&fallen) {
+            if brick.overlaps(fallen) {
                 max_z = std::cmp::max(max_z, fallen.z.1 + 1);
             }
         }
@@ -44,16 +44,16 @@ fn disintegrate(bricks: &Vec<Brick>) -> usize {
 
         let bricks_above = further_bricks
             .iter()
-            .filter(|x| x.lays_above(&brick))
+            .filter(|x| x.lays_above(brick))
             .collect::<Vec<&Brick>>();
 
         let all_above_connected = bricks_above.iter().all(|x| {
-            let bricks_below = &bricks.iter().filter(|y| y.lays_below(&x)).count();
+            let bricks_below = &bricks.iter().filter(|y| y.lays_below(x)).count();
             bricks_below >= &2
         });
 
         if all_above_connected {
-            disintegrated.insert(brick.clone());
+            disintegrated.insert(*brick);
         }
     }
 
@@ -85,11 +85,11 @@ impl Brick {
     }
 
     fn lays_above(&self, other: &Self) -> bool {
-        self.z.0 == other.z.1 + 1 && self.overlaps(&other)
+        self.z.0 == other.z.1 + 1 && self.overlaps(other)
     }
 
     fn lays_below(&self, other: &Self) -> bool {
-        self.z.1 == other.z.0 - 1 && self.overlaps(&other)
+        self.z.1 == other.z.0 - 1 && self.overlaps(other)
     }
 
     fn overlaps(&self, other: &Self) -> bool {
@@ -106,7 +106,7 @@ fn parse_pos(input: &str) -> Vec<usize> {
 }
 
 fn parse(input: Vec<&str>) -> Vec<Brick> {
-    input.iter().map(|x| Brick::from(*x)).collect()
+    input.iter().map(|x| Brick::from(x)).collect()
 }
 
 #[test]
