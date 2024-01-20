@@ -1,6 +1,6 @@
 use std::{
     cmp::{max, min},
-    collections::HashSet,
+    collections::{HashMap, HashSet, VecDeque},
 };
 
 pub fn bricks(collect: Vec<&str>) -> usize {
@@ -10,8 +10,17 @@ pub fn bricks(collect: Vec<&str>) -> usize {
     let mut fallen_bricks = fall(&bricks);
     fallen_bricks.sort_by_key(|x| x.z.0);
 
-    println!("Fallen bricks: {:?}", fallen_bricks);
     disintegrate(&fallen_bricks)
+}
+
+pub fn all_bricks(collect: Vec<&str>) -> usize {
+    let mut bricks = parse(collect);
+    bricks.sort_by_key(|x| x.z.0);
+
+    let mut fallen_bricks = fall(&bricks);
+    fallen_bricks.sort_by_key(|x| x.z.0);
+
+    disintegrate_chain(&fallen_bricks)
 }
 
 fn fall(bricks: &Vec<Brick>) -> Vec<Brick> {
@@ -35,10 +44,66 @@ fn fall(bricks: &Vec<Brick>) -> Vec<Brick> {
     fallen_bricks
 }
 
+fn disintegrate_chain(bricks: &Vec<Brick>) -> usize {
+    let mut k_supports_v = HashMap::from(
+        bricks
+            .iter()
+            .enumerate()
+            .map(|(i, _)| (i, HashSet::new()))
+            .collect::<HashMap<usize, HashSet<usize>>>(),
+    );
+
+    let mut v_supports_k = k_supports_v.clone();
+
+    for (j, upper) in bricks.iter().enumerate() {
+        for (i, lower) in bricks[..j].iter().enumerate() {
+            if upper.lays_above(lower) {
+                k_supports_v.get_mut(&i).unwrap().insert(j);
+                v_supports_k.get_mut(&j).unwrap().insert(i);
+            }
+        }
+    }
+
+    let mut total = 0;
+    for (i, _) in bricks.iter().enumerate() {
+        let mut queue = VecDeque::from(
+            k_supports_v
+                .get(&i)
+                .unwrap()
+                .iter()
+                .filter(|x| v_supports_k.get(x).unwrap().len() == 1)
+                .collect::<Vec<&usize>>(),
+        );
+
+        let mut falling: HashSet<usize> = HashSet::from_iter(queue.iter().map(|x| **x));
+        falling.insert(i);
+
+        while !queue.is_empty() {
+            let j = queue.pop_front().unwrap();
+
+            for k in k_supports_v
+                .get(j)
+                .unwrap()
+                .iter()
+                .filter(|x| !falling.contains(x))
+                .collect::<Vec<&usize>>()
+            {
+                if v_supports_k.get(k).unwrap().is_subset(&falling) {
+                    queue.push_back(k);
+                    falling.insert(*k);
+                }
+            }
+        }
+
+        total += falling.len() - 1;
+    }
+
+    total
+}
+
 fn disintegrate(bricks: &Vec<Brick>) -> usize {
     let mut disintegrated = HashSet::new();
 
-    println!("Bricks: {:?}", bricks.len());
     for (i, brick) in bricks.iter().enumerate() {
         let further_bricks = &bricks[i + 1..];
 
