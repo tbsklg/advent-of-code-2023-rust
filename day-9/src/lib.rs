@@ -36,11 +36,7 @@ pub fn calc_extrapolated_values_to_left(input: Vec<&str>) -> i32 {
 fn calc_differences(input: Vec<i32>) -> Vec<i32> {
     let tail = input.iter().skip(1).collect::<Vec<&i32>>();
 
-    input
-        .iter()
-        .zip(tail)
-        .map(|(x, y)| (y - x))
-        .collect()
+    input.iter().zip(tail).map(|(x, y)| (y - x)).collect()
 }
 
 fn capture_till_difference_is_zero_to_right(input: Vec<i32>) -> i32 {

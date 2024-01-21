@@ -77,8 +77,11 @@ fn count_arrangements(
         result += count_arrangements(input[1..].to_string(), groups.clone(), cache);
     }
 
-    if (head_input == '#' || head_input == '?') && head_group <= input_len
-            && !input.chars().take(head_group as usize).any(|x| x == '.') && (head_group == input_len || input.chars().nth(head_group as usize).unwrap() != '#') {
+    if (head_input == '#' || head_input == '?')
+        && head_group <= input_len
+        && !input.chars().take(head_group as usize).any(|x| x == '.')
+        && (head_group == input_len || input.chars().nth(head_group as usize).unwrap() != '#')
+    {
         result += count_arrangements(
             input.chars().skip(head_group as usize + 1).collect(),
             groups.clone().into_iter().skip(1).collect(),

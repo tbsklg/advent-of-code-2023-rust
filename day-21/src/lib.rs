@@ -43,8 +43,6 @@ fn next_pos(garden: Vec<&str>, (r, c): Pos) -> Vec<Pos> {
     .iter()
     .filter(|p| in_garden(&garden, **p))
     .copied()
- 
-    
     .collect()
 }
 

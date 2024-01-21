@@ -109,7 +109,9 @@ fn create_cube_set(input: &str) -> HashMap<Color, u32> {
     input
         .split(", ")
         .fold(HashMap::new(), |mut cube_set, cube| {
-            if let Some((color, quantity)) = extract_color_and_quantity(cube) { cube_set.insert(color, quantity); }
+            if let Some((color, quantity)) = extract_color_and_quantity(cube) {
+                cube_set.insert(color, quantity);
+            }
             cube_set
         })
 }

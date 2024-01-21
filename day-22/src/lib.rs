@@ -46,10 +46,10 @@ fn fall(bricks: &Vec<Brick>) -> Vec<Brick> {
 
 fn disintegrate_chain(bricks: &Vec<Brick>) -> usize {
     let mut k_supports_v = bricks
-            .iter()
-            .enumerate()
-            .map(|(i, _)| (i, HashSet::new()))
-            .collect::<HashMap<usize, HashSet<usize>>>();
+        .iter()
+        .enumerate()
+        .map(|(i, _)| (i, HashSet::new()))
+        .collect::<HashMap<usize, HashSet<usize>>>();
 
     let mut v_supports_k = k_supports_v.clone();
 
