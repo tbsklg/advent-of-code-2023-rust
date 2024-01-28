@@ -271,7 +271,7 @@ fn should_check_if_game_is_possible() {
         (Color::Blue, 14),
     ]));
 
-    assert_eq!(is_possible, true);
+    assert!(is_possible);
 }
 
 #[test]
@@ -291,7 +291,7 @@ fn should_check_if_game_is_not_possible() {
         (Color::Blue, 13),
     ]));
 
-    assert_eq!(is_possible, false);
+    assert!(!is_possible);
 }
 
 #[test]

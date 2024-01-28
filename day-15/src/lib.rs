@@ -80,7 +80,7 @@ fn remove_lens(lenses: Vec<String>, label: &str) -> Vec<String> {
 }
 
 fn box_index(input: &str) -> &str {
-    let x: Vec<&str> = input.clone().split(|x| x == '=' || x == '-').collect();
+    let x: Vec<&str> = input.split(|x| x == '=' || x == '-').collect();
 
     x.first().unwrap()
 }

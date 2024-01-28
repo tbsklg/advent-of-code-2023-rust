@@ -34,12 +34,10 @@ fn next_poss(garden: Vec<&str>, poss: HashSet<Pos>) -> HashSet<Pos> {
 }
 
 fn next_pos(garden: Vec<&str>, (r, c): Pos) -> Vec<Pos> {
-    vec![
-        (r + 1, c),
+    [(r + 1, c),
         (r, c + 1),
         (r.saturating_sub(1), c),
-        (r, c.saturating_sub(1)),
-    ]
+        (r, c.saturating_sub(1))]
     .iter()
     .filter(|p| in_garden(&garden, **p))
     .copied()

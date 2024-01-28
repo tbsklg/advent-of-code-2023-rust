@@ -13,7 +13,7 @@ enum Dir {
 }
 
 impl Dir {
-    fn opposite(self: &Self) -> Dir {
+    fn opposite(&self) -> Dir {
         match self {
             Dir::North => Dir::South,
             Dir::South => Dir::North,
@@ -26,7 +26,7 @@ impl Dir {
 type Position = ((usize, usize), Dir);
 
 fn walk(trails: Vec<&str>) -> usize {
-    let mut start = ((0, 1), Dir::South);
+    let start = ((0, 1), Dir::South);
 
     assert!(trails[0].chars().nth(1).unwrap() == '.');
 
@@ -35,7 +35,7 @@ fn walk(trails: Vec<&str>) -> usize {
     let mut queue = VecDeque::from(
         neighbours(&trails, &start)
             .iter()
-            .map(|p| (p.clone(), 1))
+            .map(|p| (*p, 1))
             .collect::<Vec<(Position, usize)>>(),
     );
 
@@ -53,17 +53,17 @@ fn walk(trails: Vec<&str>) -> usize {
         }
     }
 
-    hikes.iter().max().unwrap().clone()
+    *hikes.iter().max().unwrap()
 }
 
 fn neighbours(trails: &Vec<&str>, ((r, c), d): &Position) -> Vec<Position> {
-    slope(&trails, &((*r, *c), *d))
+    slope(trails, &((*r, *c), *d))
         .map(|p| vec![p])
         .unwrap_or(vec![
-            ((r.clone(), c.clone() + 1), Dir::East),
-            ((r.clone(), c.saturating_sub(1)), Dir::West),
-            ((r.clone() + 1, c.clone()), Dir::South),
-            ((r.saturating_sub(1), c.clone()), Dir::North),
+            ((*r, *c + 1), Dir::East),
+            ((*r, c.saturating_sub(1)), Dir::West),
+            ((*r + 1, *c), Dir::South),
+            ((r.saturating_sub(1), *c), Dir::North),
         ])
         .into_iter()
         .filter(|(_, n)| *n != d.opposite())
@@ -73,10 +73,10 @@ fn neighbours(trails: &Vec<&str>, ((r, c), d): &Position) -> Vec<Position> {
 
 fn slope(trails: &Vec<&str>, ((r, c), _): &Position) -> Option<Position> {
     match trails[*r].chars().nth(*c).unwrap() {
-        '>' => Some(((r.clone(), c.clone() + 1), Dir::East)),
-        '<' => Some(((r.clone(), c.saturating_sub(1)), Dir::West)),
-        'v' => Some(((r.clone() + 1, c.clone()), Dir::South)),
-        '^' => Some(((r.saturating_sub(1), c.clone()), Dir::North)),
+        '>' => Some(((*r, *c + 1), Dir::East)),
+        '<' => Some(((*r, c.saturating_sub(1)), Dir::West)),
+        'v' => Some(((*r + 1, *c), Dir::South)),
+        '^' => Some(((r.saturating_sub(1), *c), Dir::North)),
         _ => None,
     }
 }

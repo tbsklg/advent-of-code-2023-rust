@@ -75,8 +75,7 @@ fn calculate_conversions(
     match strategy.is_empty() {
         true => source,
         false => {
-            let maybe_next = strategy
-                .get(0)
+            let maybe_next = strategy.first()
                 .and_then(|s| map.get(s))
                 .and_then(|m| calculate_conversion(source, m.to_vec()));
 

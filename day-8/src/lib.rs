@@ -69,7 +69,7 @@ fn parse_network_line(input: &str) -> (String, (String, String)) {
         .collect::<Vec<String>>();
 
     (
-        words.get(0).unwrap().clone(),
+        words.first().unwrap().clone(),
         (words.get(1).unwrap().clone(), words.get(2).unwrap().clone()),
     )
 }
