@@ -31,23 +31,29 @@ fn walk(trails: Vec<&str>) -> usize {
     assert!(trails[0].chars().nth(1).unwrap() == '.');
 
     let end = (trails.len() - 1, trails[0].len() - 2);
-    let mut path = 0;
 
-    let mut queue = VecDeque::from(neighbours(&trails, &start));
+    let mut queue = VecDeque::from(
+        neighbours(&trails, &start)
+            .iter()
+            .map(|p| (p.clone(), 1))
+            .collect::<Vec<(Position, usize)>>(),
+    );
+
+    let mut hikes = vec![];
 
     while let Some(pos) = queue.pop_front() {
-        println!("Pos {:?}", pos);
-        if pos.0 == end {
-            break;
+        if pos.0 .0 == end {
+            hikes.push(pos.1);
+            continue;
         }
 
-        let next = neighbours(&trails, &pos);
+        let next = neighbours(&trails, &pos.0);
         for n in next {
-            queue.push_back(n);
+            queue.push_back((n, pos.1 + 1));
         }
     }
 
-    4
+    hikes.iter().max().unwrap().clone()
 }
 
 fn neighbours(trails: &Vec<&str>, ((r, c), d): &Position) -> Vec<Position> {
