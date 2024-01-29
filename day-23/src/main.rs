@@ -10,4 +10,11 @@ fn main() {
     let elapsed = start.elapsed();
     println!("Elapsed time: {:?}", elapsed);
     println!("Solution is: {:?}", result);
+
+    println!("Trying to solve part 2...");
+    let start = std::time::Instant::now();
+    let result = day_23::hello2(input.lines().collect());
+    let elapsed = start.elapsed();
+    println!("Elapsed time: {:?}", elapsed);
+    println!("Solution is: {:?}", result);
 }

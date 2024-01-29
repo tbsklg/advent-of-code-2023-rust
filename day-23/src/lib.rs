@@ -1,10 +1,20 @@
-use std::collections::VecDeque;
+use std::{
+    cmp::max,
+    collections::{HashMap, HashSet, VecDeque},
+};
 
 pub fn hello(input: Vec<&str>) -> usize {
     walk(input)
 }
 
-#[derive(PartialEq, Eq, Copy, Clone, Debug)]
+pub fn hello2(input: Vec<&str>) -> usize {
+    let start = (0, 1);
+    let end = (input.len() - 1, input[0].len() - 2);
+
+    longest_path(start, end, &distances(input.clone(), points(input.clone())))
+}
+
+#[derive(PartialEq, Eq, Copy, Clone, Debug, Hash)]
 enum Dir {
     North,
     South,
@@ -24,6 +34,86 @@ impl Dir {
 }
 
 type Position = ((usize, usize), Dir);
+type Distances = HashMap<(usize, usize), HashMap<(usize, usize), usize>>;
+
+fn points(trails: Vec<&str>) -> Vec<(usize, usize)> {
+    let start = (0, 1);
+    let end = (trails.len() - 1, trails[0].len() - 2);
+
+    let mut points = vec![start, end];
+    for (r, row) in trails.iter().enumerate() {
+        for (c, _) in row.chars().enumerate() {
+            let is_point = trails[r].chars().nth(c).unwrap() == '.';
+            if is_point && next(&trails, &(r, c)).len() >= 3 {
+                points.push((r, c));
+            }
+        }
+    }
+
+    points
+}
+
+fn distances(trails: Vec<&str>, points: Vec<(usize, usize)>) -> Distances {
+    let mut distances = HashMap::<(usize, usize), HashMap<(usize, usize), usize>>::new();
+
+    for (sr, sc) in &points {
+        let mut queue = VecDeque::from([(sr.clone(), sc.clone(), 0)]);
+        let mut seen = HashSet::from([(sr.clone(), sc.clone())]);
+
+        while let Some((nr, nc, w)) = queue.pop_front() {
+            if w != 0 && points.contains(&(nr, nc)) {
+                distances
+                    .entry((*sr, *sc))
+                    .or_insert(HashMap::new())
+                    .insert((nr, nc), w);
+                continue;
+            }
+
+            for (dr, dc) in next(&trails, &(nr, nc)) {
+                if !seen.contains(&(dr, dc)) {
+                    queue.push_front((dr.clone(), dc.clone(), w + 1));
+                    seen.insert((dr.clone(), dc.clone()));
+                }
+            }
+        }
+    }
+
+    distances
+}
+
+fn longest_path(start: (usize, usize), end: (usize, usize), distances: &Distances) -> usize {
+    fn dfs(
+        current: (usize, usize),
+        end: (usize, usize),
+        seen: &mut HashSet<(usize, usize)>,
+        distances: &Distances,
+    ) -> usize {
+        if current == end {
+            return 0;
+        }
+
+        let mut m = 0;
+
+        seen.insert(current);
+
+        for n in distances.get(&current).unwrap().keys() {
+            if !seen.contains(n) {
+                m = max(
+                    m,
+                    dfs(*n, end, seen, distances)
+                        + distances.get(&current).unwrap().get(n).unwrap(),
+                );
+            }
+        }
+
+        seen.remove(&current);
+
+        m
+    }
+
+    let seen = &mut HashSet::<(usize, usize)>::new();
+    dfs(start, end, seen, distances)
+}
 
 fn walk(trails: Vec<&str>) -> usize {
     let start = ((0, 1), Dir::South);
@@ -33,7 +123,7 @@ fn walk(trails: Vec<&str>) -> usize {
     let end = (trails.len() - 1, trails[0].len() - 2);
 
     let mut queue = VecDeque::from(
-        neighbours(&trails, &start)
+        next_with_slope(&trails, &start)
             .iter()
             .map(|p| (*p, 1))
             .collect::<Vec<(Position, usize)>>(),
@@ -47,7 +137,7 @@ fn walk(trails: Vec<&str>) -> usize {
             continue;
         }
 
-        let next = neighbours(&trails, &pos.0);
+        let next = next_with_slope(&trails, &pos.0);
         for n in next {
             queue.push_back((n, pos.1 + 1));
         }
@@ -56,7 +146,21 @@ fn walk(trails: Vec<&str>) -> usize {
     *hikes.iter().max().unwrap()
 }
 
-fn neighbours(trails: &Vec<&str>, ((r, c), d): &Position) -> Vec<Position> {
+fn next(trails: &Vec<&str>, (r, c): &(usize, usize)) -> Vec<(usize, usize)> {
+    vec![
+        ((*r, *c + 1)),
+        ((*r, c.saturating_sub(1))),
+        ((*r + 1, *c)),
+        ((r.saturating_sub(1), *c)),
+    ]
+    .into_iter()
+    .filter(|(nr, nc)| (*nr, *nc) != (*r, *c))
+    .filter(|(nr, nc)| nr < &trails.len() && nc < &trails[0].len())
+    .filter(|(nr, nc)| trails[*nr].chars().nth(*nc).unwrap() != '#')
+    .collect()
+}
+
+fn next_with_slope(trails: &Vec<&str>, ((r, c), d): &Position) -> Vec<Position> {
     slope(trails, &((*r, *c), *d))
         .map(|p| vec![p])
         .unwrap_or(vec![
