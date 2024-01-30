@@ -57,22 +57,22 @@ fn distances(trails: Vec<&str>, points: Vec<(usize, usize)>) -> Distances {
     let mut distances = HashMap::<(usize, usize), HashMap<(usize, usize), usize>>::new();
 
     for (sr, sc) in &points {
-        let mut queue = VecDeque::from([(sr.clone(), sc.clone(), 0)]);
-        let mut seen = HashSet::from([(sr.clone(), sc.clone())]);
+        let mut queue = VecDeque::from([(*sr, *sc, 0)]);
+        let mut seen = HashSet::from([(*sr, *sc)]);
 
         while let Some((nr, nc, w)) = queue.pop_front() {
             if w != 0 && points.contains(&(nr, nc)) {
                 distances
                     .entry((*sr, *sc))
-                    .or_insert(HashMap::new())
+                    .or_default()
                     .insert((nr, nc), w);
                 continue;
             }
 
             for (dr, dc) in next(&trails, &(nr, nc)) {
                 if !seen.contains(&(dr, dc)) {
-                    queue.push_front((dr.clone(), dc.clone(), w + 1));
-                    seen.insert((dr.clone(), dc.clone()));
+                    queue.push_front((dr, dc, w + 1));
+                    seen.insert((dr, dc));
                 }
             }
         }
