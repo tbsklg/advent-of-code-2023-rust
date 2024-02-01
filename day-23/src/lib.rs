@@ -3,15 +3,15 @@ use std::{
     collections::{HashMap, HashSet, VecDeque},
 };
 
-pub fn hello(input: Vec<&str>) -> usize {
+pub fn longest_path_slope(input: Vec<&str>) -> usize {
     walk(input)
 }
 
-pub fn hello2(input: Vec<&str>) -> usize {
+pub fn longest_path(input: Vec<&str>) -> isize {
     let start = (0, 1);
     let end = (input.len() - 1, input[0].len() - 2);
 
-    longest_path(start, end, &distances(input.clone(), points(input.clone())))
+    find_longest_path(start, end, &distances(input.clone(), points(input.clone())))
 }
 
 #[derive(PartialEq, Eq, Copy, Clone, Debug, Hash)]
@@ -34,7 +34,7 @@ impl Dir {
 }
 
 type Position = ((usize, usize), Dir);
-type Distances = HashMap<(usize, usize), HashMap<(usize, usize), usize>>;
+type Distances = HashMap<(usize, usize), HashMap<(usize, usize), isize>>;
 
 fn points(trails: Vec<&str>) -> Vec<(usize, usize)> {
     let start = (0, 1);
@@ -42,9 +42,12 @@ fn points(trails: Vec<&str>) -> Vec<(usize, usize)> {
 
     let mut points = vec![start, end];
     for (r, row) in trails.iter().enumerate() {
-        for (c, _) in row.chars().enumerate() {
-            let is_point = trails[r].chars().nth(c).unwrap() == '.';
-            if is_point && next(&trails, &(r, c)).len() >= 3 {
+        for (c, ch) in row.chars().enumerate() {
+            if ch == '#' {
+                continue;
+            }
+
+            if next(&trails, &(r, c)).len() >= 3 {
                 points.push((r, c));
             }
         }
@@ -54,7 +57,7 @@ fn points(trails: Vec<&str>) -> Vec<(usize, usize)> {
 }
 
 fn distances(trails: Vec<&str>, points: Vec<(usize, usize)>) -> Distances {
-    let mut distances = HashMap::<(usize, usize), HashMap<(usize, usize), usize>>::new();
+    let mut distances = HashMap::<(usize, usize), HashMap<(usize, usize), isize>>::new();
 
     for (sr, sc) in &points {
         let mut queue = VecDeque::from([(*sr, *sc, 0)]);
@@ -62,10 +65,7 @@ fn distances(trails: Vec<&str>, points: Vec<(usize, usize)>) -> Distances {
 
         while let Some((nr, nc, w)) = queue.pop_front() {
             if w != 0 && points.contains(&(nr, nc)) {
-                distances
-                    .entry((*sr, *sc))
-                    .or_default()
-                    .insert((nr, nc), w);
+                distances.entry((*sr, *sc)).or_default().insert((nr, nc), w);
                 continue;
             }
 
@@ -81,18 +81,18 @@ fn distances(trails: Vec<&str>, points: Vec<(usize, usize)>) -> Distances {
     distances
 }
 
-fn longest_path(start: (usize, usize), end: (usize, usize), distances: &Distances) -> usize {
+fn find_longest_path(start: (usize, usize), end: (usize, usize), distances: &Distances) -> isize {
     fn dfs(
         current: (usize, usize),
         end: (usize, usize),
         seen: &mut HashSet<(usize, usize)>,
         distances: &Distances,
-    ) -> usize {
+    ) -> isize {
         if current == end {
             return 0;
         }
 
-        let mut m = 0;
+        let mut m = isize::MIN;
 
         seen.insert(current);
 
@@ -154,7 +154,6 @@ fn next(trails: &Vec<&str>, (r, c): &(usize, usize)) -> Vec<(usize, usize)> {
         ((r.saturating_sub(1), *c)),
     ]
     .into_iter()
-    .filter(|(nr, nc)| (*nr, *nc) != (*r, *c))
     .filter(|(nr, nc)| nr < &trails.len() && nc < &trails[0].len())
     .filter(|(nr, nc)| trails[*nr].chars().nth(*nc).unwrap() != '#')
     .collect()
